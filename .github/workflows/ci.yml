@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test
+
+      - name: Package app (ad-hoc signed)
+        run: ./scripts/build-app.sh
+
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: NotchIsland
+          path: build/*.zip

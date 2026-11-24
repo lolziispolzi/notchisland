@@ -1,25 +1,5 @@
-import SwiftUI
+import Foundation
 import IOKit.ps
-
-// MARK: - Clock
-
-struct ClockWidget: View {
-    var body: some View {
-        // TimelineView only exists while the island is open, so no idle timer.
-        TimelineView(.periodic(from: .now, by: 1)) { context in
-            VStack(alignment: .leading, spacing: 2) {
-                Text(context.date, format: .dateTime.hour().minute())
-                    .font(.system(size: 34, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                Text(context.date, format: .dateTime.weekday(.wide).month().day())
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
-            }
-        }
-    }
-}
-
-// MARK: - Battery
 
 struct BatteryInfo: Equatable {
     let percent: Int
@@ -58,19 +38,41 @@ struct BatteryInfo: Equatable {
         default: return "battery.100percent"
         }
     }
+
+    var isLow: Bool { percent <= 20 && !isCharging }
 }
 
-struct BatteryWidget: View {
-    let info: BatteryInfo
+/// Publishes battery state. Updates come from IOKit power-source notifications, not polling.
+@MainActor
+final class BatteryService: ObservableObject {
+    @Published private(set) var info: BatteryInfo?
 
-    var body: some View {
-        HStack(spacing: 6) {
-            Text("\(info.percent)%")
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .monospacedDigit()
-            Image(systemName: info.symbolName)
-                .font(.system(size: 18))
-                .foregroundStyle(info.percent <= 20 && !info.isCharging ? .red : .white)
+    /// Called when a power adapter is connected.
+    var onPluggedIn: (() -> Void)?
+
+    private var runLoopSource: CFRunLoopSource?
+
+    init() {
+        info = BatteryInfo.current()
+
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        let source = IOPSNotificationCreateRunLoopSource({ context in
+            guard let context else { return }
+            let service = Unmanaged<BatteryService>.fromOpaque(context).takeUnretainedValue()
+            MainActor.assumeIsolated { service.refresh() }
+        }, context)?.takeRetainedValue()
+
+        if let source {
+            CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+            runLoopSource = source
+        }
+    }
+
+    func refresh() {
+        let old = info
+        info = BatteryInfo.current()
+        if let old, let new = info, !old.isPluggedIn, new.isPluggedIn {
+            onPluggedIn?()
         }
     }
 }
