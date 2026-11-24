@@ -7,6 +7,7 @@
 #   BUNDLE_ID          Bundle identifier                      (default: io.github.notchisland.NotchIsland)
 #   ARCHS              Architectures to build                 (default: "arm64 x86_64")
 #   SIGN_IDENTITY      "Developer ID Application: …"          (default: "-" = ad-hoc signing)
+#   SKIP_PACKAGES      Set to 1 to build only the .app (no zip, dmg or notarization)
 #   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD
 #                      Set all three to notarize the DMG (needs a real SIGN_IDENTITY).
 set -euo pipefail
@@ -56,6 +57,11 @@ else
     --sign "$SIGN_IDENTITY" "$APP"
 fi
 codesign --verify --strict "$APP"
+
+if [ "${SKIP_PACKAGES:-0}" = "1" ]; then
+  echo "==> Done: $APP"
+  exit 0
+fi
 
 echo "==> Creating zip"
 ditto -c -k --keepParent "$APP" "$OUT/NotchIsland-$VERSION.zip"

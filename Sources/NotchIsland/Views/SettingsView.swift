@@ -1,12 +1,45 @@
+import AppKit
 import SwiftUI
 
 struct SettingsView: View {
+    @ObservedObject var settings: AppSettings
+    @ObservedObject var vm: NotchViewModel
+
+    var body: some View {
+        TabView {
+            GeneralSettings(settings: settings)
+                .tabItem { Label("General", systemImage: "gearshape") }
+            LayoutSettings(settings: settings)
+                .tabItem { Label("Layout", systemImage: "rectangle.3.group") }
+            WeatherSettings(settings: settings, weather: vm.weather)
+                .tabItem { Label("Weather", systemImage: "cloud.sun") }
+            SportsSettings(settings: settings, sports: vm.sports)
+                .tabItem { Label("Sports", systemImage: "sportscourt") }
+            CalendarSettings(settings: settings, calendar: vm.calendar)
+                .tabItem { Label("Calendar", systemImage: "calendar") }
+            DropSettings(settings: settings, shelf: vm.shelf)
+                .tabItem { Label("Drop Zone", systemImage: "tray.and.arrow.down") }
+        }
+        .frame(width: 540, height: 540)
+    }
+
+    static var version: String {
+        let info = Bundle.main.infoDictionary
+        let short = info?["CFBundleShortVersionString"] as? String ?? "dev"
+        let build = info?["CFBundleVersion"] as? String
+        return build.map { "\(short) (\($0))" } ?? short
+    }
+}
+
+// MARK: - General
+
+private struct GeneralSettings: View {
     @ObservedObject var settings: AppSettings
     @StateObject private var launchAtLogin = LaunchAtLogin()
 
     var body: some View {
         Form {
-            Section("General") {
+            Section {
                 Toggle("Launch at login", isOn: Binding(
                     get: { launchAtLogin.isEnabled },
                     set: { launchAtLogin.set($0) }
@@ -43,28 +76,367 @@ struct SettingsView: View {
                 Toggle("Haptic feedback", isOn: $settings.hapticsEnabled)
             }
 
-            Section("Widgets") {
-                Toggle("Now playing", isOn: $settings.showNowPlaying)
-                Toggle("Live activities while closed", isOn: $settings.showLiveActivities)
-                Toggle("Battery", isOn: $settings.showBattery)
-                Toggle("File shelf", isOn: $settings.showShelf)
+            Section("While closed") {
+                Toggle("Live activities", isOn: $settings.showLiveActivities)
+                Text("Shows live scores, upcoming events, charging and music next to the notch.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("Battery in the header", isOn: $settings.showBattery)
             }
 
             Section("About") {
-                LabeledContent("Version", value: Self.version)
-                Text("Now playing needs permission to control Music or Spotify. macOS asks the first time.")
+                LabeledContent("Version", value: SettingsView.version)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+// MARK: - Layout
+
+private struct LayoutSettings: View {
+    @ObservedObject var settings: AppSettings
+
+    var body: some View {
+        Form {
+            Section("Island size") {
+                Picker("Size", selection: $settings.islandSize) {
+                    ForEach(IslandSize.allCases) { size in
+                        Text(size.title).tag(size)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            Section {
+                ForEach(settings.widgetOrder) { widget in
+                    HStack {
+                        Image(systemName: widget.symbol)
+                            .frame(width: 22)
+                        Toggle(widget.title, isOn: Binding(
+                            get: { settings.isVisible(widget) },
+                            set: { settings.setVisible(widget, $0) }
+                        ))
+                        Spacer()
+                        Button {
+                            settings.move(widget, by: -1)
+                        } label: {
+                            Image(systemName: "chevron.up")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(settings.widgetOrder.first == widget)
+                        Button {
+                            settings.move(widget, by: 1)
+                        } label: {
+                            Image(systemName: "chevron.down")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(settings.widgetOrder.last == widget)
+                    }
+                }
+            } header: {
+                Text("Widgets")
+            } footer: {
+                Text("The first visible widget opens by default. You can also press the sliders button in the island to change this without opening Settings.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440, height: 580)
+    }
+}
+
+// MARK: - Weather
+
+private struct WeatherSettings: View {
+    @ObservedObject var settings: AppSettings
+    @ObservedObject var weather: WeatherService
+
+    @State private var query = ""
+    @State private var results: [WeatherLocation] = []
+    @State private var isSearching = false
+    @State private var searchMessage: String?
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("Units", selection: $settings.temperatureUnit) {
+                    ForEach(TemperatureUnit.allCases) { unit in
+                        Text(unit.title).tag(unit)
+                    }
+                }
+                Toggle("Use my current location", isOn: $settings.useCurrentLocation)
+                if !AppEnvironment.isBundled {
+                    Text("Current location works only in the built app (scripts/run-app.sh).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
+                if let location = settings.manualLocation {
+                    LabeledContent("City", value: [location.name, location.detail].compactMap { $0 }.joined(separator: ", "))
+                }
+                HStack {
+                    TextField("Search for a city", text: $query)
+                        .onSubmit(search)
+                    Button("Search", action: search)
+                        .disabled(query.trimmingCharacters(in: .whitespaces).isEmpty || isSearching)
+                }
+                if isSearching {
+                    ProgressView().controlSize(.small)
+                }
+                ForEach(results, id: \.self) { result in
+                    Button {
+                        settings.manualLocation = result
+                        results = []
+                        query = ""
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(result.name)
+                                if let detail = result.detail {
+                                    Text(detail).font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                if let searchMessage {
+                    Text(searchMessage).font(.caption).foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("City")
+            } footer: {
+                Text("Used when current location is off or unavailable.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                if let snapshot = weather.snapshot {
+                    LabeledContent("Showing", value: snapshot.locationName)
+                }
+                Button("Refresh Now") { weather.refresh() }
+                Text("Weather data from Open-Meteo.com.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
     }
 
-    static var version: String {
-        let info = Bundle.main.infoDictionary
-        let short = info?["CFBundleShortVersionString"] as? String ?? "dev"
-        let build = info?["CFBundleVersion"] as? String
-        return build.map { "\(short) (\($0))" } ?? short
+    private func search() {
+        let text = query
+        isSearching = true
+        searchMessage = nil
+        Task {
+            do {
+                results = try await WeatherService.searchLocations(text)
+                searchMessage = results.isEmpty ? "No matching cities." : nil
+            } catch {
+                searchMessage = "Search failed. Check your connection."
+            }
+            isSearching = false
+        }
+    }
+}
+
+// MARK: - Sports
+
+private struct SportsSettings: View {
+    @ObservedObject var settings: AppSettings
+    @ObservedObject var sports: SportsService
+
+    /// Teams for the picker, including the saved favorite while the list loads.
+    private var pickerTeams: [SavedTeam] {
+        guard let favorite = settings.favoriteTeam, !sports.teams.contains(favorite) else { return sports.teams }
+        return [favorite] + sports.teams
+    }
+
+    private var teamSelection: Binding<String?> {
+        Binding(
+            get: { settings.favoriteTeam?.id },
+            set: { id in settings.favoriteTeam = pickerTeams.first { $0.id == id } }
+        )
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("League", selection: $settings.sportsLeague) {
+                    ForEach(SportsLeague.allCases) { league in
+                        Label("\(league.title) · \(league.sportName)", systemImage: league.symbol).tag(league)
+                    }
+                }
+                Picker("Favorite team", selection: teamSelection) {
+                    Text("None").tag(String?.none)
+                    ForEach(pickerTeams) { team in
+                        Text(team.name).tag(Optional(team.id))
+                    }
+                }
+                .disabled(pickerTeams.isEmpty)
+
+                if sports.teamsState == .loading {
+                    ProgressView().controlSize(.small)
+                } else if let error = sports.teamsState.errorMessage {
+                    HStack {
+                        Text(error).foregroundStyle(.red)
+                        Button("Retry") { sports.loadTeams() }
+                    }
+                }
+            }
+
+            if let team = settings.favoriteTeam {
+                Section {
+                    HStack(spacing: 10) {
+                        TeamLogo(urlString: team.logoURL, size: 32)
+                        Text(team.name).font(.headline)
+                        Spacer()
+                        Button("Refresh Scores") { sports.refresh() }
+                    }
+                }
+            }
+
+            Section {
+                Text("While your team plays, the live score shows next to the notch and updates every minute. Scores come from ESPN's public data feed.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear {
+            if sports.teams.isEmpty { sports.loadTeams() }
+        }
+        .onChange(of: settings.sportsLeague) { _, _ in
+            settings.favoriteTeam = nil
+            sports.clearTeams()
+            sports.loadTeams()
+        }
+    }
+}
+
+// MARK: - Calendar
+
+private struct CalendarSettings: View {
+    @ObservedObject var settings: AppSettings
+    @ObservedObject var calendar: CalendarService
+
+    private static let headsUpChoices = [0, 5, 10, 15, 30]
+    private static let alertChoices = [0, 5, 10, 15, 30, 60]
+
+    private var statusText: String {
+        switch calendar.access {
+        case .granted: "Allowed"
+        case .denied: "Not allowed"
+        case .notDetermined: "Not asked yet"
+        case .unavailable: "Needs the built app"
+        }
+    }
+
+    var body: some View {
+        Form {
+            Section("Access") {
+                LabeledContent("Calendar access", value: statusText)
+                if calendar.access == .notDetermined {
+                    Button("Allow Access") { calendar.requestAccess() }
+                } else if calendar.access == .denied {
+                    Button("Open Privacy Settings") { calendar.openPrivacySettings() }
+                }
+            }
+
+            Section {
+                Picker("Show upcoming event in the notch", selection: $settings.eventHeadsUpMinutes) {
+                    ForEach(Self.headsUpChoices, id: \.self) { minutes in
+                        Text(minutes == 0 ? "Off" : "\(minutes) min before").tag(minutes)
+                    }
+                }
+                Picker("Alert for new events", selection: $settings.newEventAlertMinutes) {
+                    ForEach(Self.alertChoices, id: \.self) { minutes in
+                        Text(minutes == 0 ? "None" : "\(minutes) min before").tag(minutes)
+                    }
+                }
+            } header: {
+                Text("Reminders")
+            } footer: {
+                Text("Alerts are saved on the event, so Calendar reminds you on this Mac and your other devices.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+// MARK: - Drop zone
+
+private struct DropSettings: View {
+    @ObservedObject var settings: AppSettings
+    @ObservedObject var shelf: ShelfStore
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Remove files from the drop zone after copying", isOn: $settings.removeAfterCopy)
+            }
+
+            Section("Found on this Mac") {
+                ForEach(ShelfStore.detectedDestinations()) { destination in
+                    LabeledContent {
+                        Text(destination.url.path)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    } label: {
+                        Label(destination.name, systemImage: destination.symbol)
+                    }
+                }
+            }
+
+            Section {
+                ForEach(settings.customDropFolders, id: \.self) { path in
+                    HStack {
+                        Label(URL(fileURLWithPath: path).lastPathComponent, systemImage: "folder")
+                        Spacer()
+                        Button {
+                            settings.customDropFolders.removeAll { $0 == path }
+                        } label: {
+                            Image(systemName: "minus.circle")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Remove")
+                    }
+                }
+                Button("Add Folder…", action: addFolder)
+            } header: {
+                Text("Your folders")
+            } footer: {
+                Text("Copying into a Dropbox, Google Drive, OneDrive or iCloud Drive folder uploads the file through that app.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private func addFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.prompt = "Add Folder"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            MainActor.assumeIsolated {
+                if !settings.customDropFolders.contains(url.path) {
+                    settings.customDropFolders.append(url.path)
+                }
+            }
+        }
     }
 }

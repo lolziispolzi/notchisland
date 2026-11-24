@@ -10,18 +10,20 @@
 
 ---
 
-Hover over the notch and it expands into a small panel with what's playing, the time, your battery and a file shelf. While closed, it can show live activities next to the notch.
+Hover over the notch and it expands into a panel with your music, weather, calendar, sports scores and a drop zone for files. While closed, it shows live activities next to the notch.
 
 ## Features
 
 - **Expands from the notch** with a spring animation, on hover or on click.
-- **Now playing** for Apple Music and Spotify: artwork, title, artist, progress, and play/pause/next/previous.
-- **Live activities while closed:** artwork and animated bars while music plays; a "Charging" pill when you plug in.
-- **File shelf:** drag files onto the notch to park them, then drag them out anywhere later. AirDrop them in one click.
-- **Clock and battery.**
+- **Now playing** for Spotify and Apple Music: artwork, title, artist, a draggable progress bar, play/pause, next/previous, shuffle and repeat. Click the artwork to open the player.
+- **Weather** for your current location or any city: current conditions, feels-like, humidity, wind and a 5-day forecast. Celsius or Fahrenheit.
+- **Calendar:** your upcoming events for the week. Add an event from the notch with a title, time, duration and alert. The alert is saved on the event, so Calendar reminds you on every device.
+- **Sports:** pick a league and your favorite team. See the live score, the latest result and the next games. NFL, NBA, WNBA, MLB, NHL, MLS, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and US college football and basketball.
+- **Drop zone:** drag files onto the notch to park them. Then copy or move them to Desktop, Downloads, iCloud Drive, Dropbox, Google Drive, OneDrive or any folder; share them; AirDrop them; copy them to the clipboard; or drag them out.
+- **Live activities while closed:** live score while your team plays, a heads-up before your next event, music artwork with animated bars, and a "Charging" pill when you plug in.
+- **Customize bar:** press the sliders button in the island to show, hide and reorder widgets and change the island size, right in the notch.
 - **Works without a notch:** draws a notch-shaped island on external displays and older Macs.
-- **Light on resources:** no polling. Updates come from system notifications, and timers run only while the island is open.
-- **Settings:** launch at login, display choice, hover delay, haptics, and per-widget toggles.
+- **Light on resources:** no polling while idle. Updates come from system notifications; weather and scores refresh when you open the island, and scores poll once a minute only during a live game.
 
 ## Requirements
 
@@ -41,13 +43,24 @@ Hover over the notch and it expands into a small panel with what's playing, the 
 
 | Permission | When it is asked | Why |
 |---|---|---|
-| Automation: Music / Spotify | First time a player is running | Read artwork and position, send play/pause/next/previous |
+| Automation: Spotify / Music | First time a player is running | Read artwork, position, shuffle and repeat; send playback commands |
+| Location | First time the Weather widget loads with "Use my current location" on | Local weather. You can pick a city instead. |
+| Calendars | When you press "Allow Calendar Access" | Show events and add new ones |
+| Files in Desktop, Documents or Downloads | First time you copy into one of those folders | Copy or move files from the drop zone |
 
-No other permissions are needed. Hover detection uses mouse-move events, which do not require Accessibility access.
+Hover detection uses mouse-move events, which do not require Accessibility access.
 
 ## Privacy
 
-NotchIsland has no analytics, no accounts and no network calls, with one exception: Spotify artwork is downloaded from Spotify's image server (`i.scdn.co`). Shelf items are stored as file paths in the app's preferences. Files are never copied or uploaded.
+NotchIsland has no analytics and no accounts. It makes these network requests and no others:
+
+| Service | Sent | Why |
+|---|---|---|
+| `api.open-meteo.com`, `geocoding-api.open-meteo.com` | Coordinates rounded to about 10 m, or the city name you search for | Weather and city search |
+| `site.api.espn.com` and ESPN image servers | League and team ID | Scores, schedules and team logos |
+| `i.scdn.co` | Nothing beyond the image request | Spotify artwork |
+
+Your location never leaves your Mac except as weather coordinates. Calendar data stays on your Mac. Drop zone items are stored as file paths in the app's preferences and are only copied where you tell them to go.
 
 ## Build from source
 
@@ -56,10 +69,12 @@ You need Xcode 16 or later.
 ```bash
 git clone <this-repo-url>
 cd NotchIsland
-swift run
+./scripts/run-app.sh
 ```
 
-You can also open `Package.swift` in Xcode and press **Run**.
+`run-app.sh` builds `NotchIsland.app` for your Mac and opens it. Use it to test everything.
+
+For quick UI work you can use `swift run`, or open `Package.swift` in Xcode and press **Run**. Without the app bundle, macOS cannot ask for location or calendar access, so those features show a notice instead.
 
 Run the tests:
 
@@ -75,7 +90,7 @@ Build a distributable `.app`, `.zip` and `.dmg` into `build/`:
 
 The default build is ad-hoc signed. See [docs/RELEASING.md](docs/RELEASING.md) for Developer ID signing and notarization.
 
-> **Note:** "Launch at login" only works from the built `NotchIsland.app`, not from `swift run`.
+> **Note:** location, calendar and "Launch at login" only work from the built `NotchIsland.app`, not from `swift run`.
 
 ## How it works
 
@@ -86,22 +101,32 @@ The default build is ad-hoc signed. See [docs/RELEASING.md](docs/RELEASING.md) f
 | Notch detection from `NSScreen.safeAreaInsets` and `auxiliaryTopLeftArea`/`auxiliaryTopRightArea` | `Core/NotchGeometry.swift` |
 | Borderless, transparent `NSPanel` above the menu bar on every Space | `Core/NotchPanel.swift` |
 | Global mouse monitors, open/close timing, click-through while closed | `Core/NotchController.swift` |
-| Shared state, live-activity logic | `Core/NotchViewModel.swift` |
-| Preferences | `Core/AppSettings.swift` |
-| Now playing from Music/Spotify distributed notifications plus AppleScript | `Services/NowPlayingService.swift` |
+| Shared state, live-activity priority | `Core/NotchViewModel.swift` |
+| Preferences, widget order, island sizes | `Core/AppSettings.swift` |
+| Now playing from Spotify/Music distributed notifications plus AppleScript | `Services/NowPlayingService.swift` |
+| Weather from Open-Meteo, location from CoreLocation | `Services/WeatherService.swift` |
+| Scores and schedules from ESPN's public API | `Services/SportsService.swift` |
+| Events, new events and heads-up timing with EventKit | `Services/CalendarService.swift` |
+| Drop zone, destinations, copy and move | `Services/ShelfStore.swift` |
 | Battery from IOKit power-source notifications | `Services/BatteryService.swift` |
-| File shelf | `Services/ShelfStore.swift` |
 | Animated notch outline | `Views/NotchShape.swift` |
-| SwiftUI views | `Views/` |
+| Customize bar | `Views/CustomizeBar.swift` |
+| Widget and settings views | `Views/` |
 
 ### Why not MediaRemote?
 
-Most notch apps used the private `MediaRemote` framework to read now-playing info from any app. Since macOS 15.4, Apple blocks it for third-party apps. NotchIsland supports Music and Spotify through their public notifications and AppleScript dictionaries instead. Support for other players is a welcome contribution.
+Most notch apps used the private `MediaRemote` framework to read now-playing info from any app. Since macOS 15.4, Apple blocks it for third-party apps. NotchIsland supports Spotify and Music through their public notifications and AppleScript dictionaries instead. Support for other players is a welcome contribution.
+
+### About the sports data
+
+ESPN's site API is public but undocumented. It needs no key, but ESPN can change it without notice. All parsing lives in `ESPN` in `SportsService.swift`, so a fix stays in one place.
 
 ## Roadmap
 
 - [ ] More players (browsers, VLC, IINA)
-- [ ] Calendar widget (EventKit)
+- [ ] Reminders app (EKReminder) list
+- [ ] Several favorite teams
+- [ ] Direct Dropbox and Google Drive upload without their desktop apps
 - [ ] Volume and brightness HUD replacement
 - [ ] Per-display islands on multi-monitor setups
 - [ ] Sparkle auto-updates

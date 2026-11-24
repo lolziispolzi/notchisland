@@ -7,9 +7,9 @@ import SwiftUI
 final class SettingsWindowController {
     private var window: NSWindow?
 
-    func show(settings: AppSettings) {
+    func show(settings: AppSettings, viewModel: NotchViewModel) {
         if window == nil {
-            let hosting = NSHostingController(rootView: SettingsView(settings: settings))
+            let hosting = NSHostingController(rootView: SettingsView(settings: settings, vm: viewModel))
             let window = NSWindow(contentViewController: hosting)
             window.title = "NotchIsland Settings"
             window.styleMask = [.titled, .closable]

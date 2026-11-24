@@ -2,8 +2,13 @@ import AppKit
 
 /// All sizes and rects for the island, in AppKit screen coordinates (origin bottom-left).
 struct NotchGeometry: Equatable {
-    /// Size of the island when expanded.
-    static let openSize = CGSize(width: 560, height: 190)
+    /// Extra height added while the customize bar is showing.
+    static let editBarHeight: CGFloat = 84
+    /// Largest possible open island. The panel is sized for this so it never needs resizing.
+    static var maxOpenSize: CGSize {
+        let large = IslandSize.large.openSize
+        return CGSize(width: large.width, height: large.height + editBarHeight)
+    }
     /// Largest top "ear" radius used by NotchShape. The panel is widened by this on each side.
     static let maxTopRadius: CGFloat = 14
     /// Used before any screen is known.
@@ -18,10 +23,10 @@ struct NotchGeometry: Equatable {
     let notchRect: NSRect
     let hasNotch: Bool
 
-    /// Frame of the transparent panel. Big enough for the expanded island.
+    /// Frame of the transparent panel. Big enough for the largest expanded island.
     var panelFrame: NSRect {
-        let width = Self.openSize.width + Self.maxTopRadius * 2
-        let height = Self.openSize.height
+        let width = Self.maxOpenSize.width + Self.maxTopRadius * 2
+        let height = Self.maxOpenSize.height
         return NSRect(x: notchRect.midX - width / 2,
                       y: screenFrame.maxY - height,
                       width: width,
@@ -38,12 +43,11 @@ struct NotchGeometry: Equatable {
     }
 
     /// Mouse leaving this area closes the island.
-    var openRect: NSRect {
-        let size = Self.openSize
-        return NSRect(x: notchRect.midX - size.width / 2 - Self.maxTopRadius,
-                      y: screenFrame.maxY - size.height,
-                      width: size.width + Self.maxTopRadius * 2,
-                      height: size.height + 2)
+    func openRect(size: CGSize) -> NSRect {
+        NSRect(x: notchRect.midX - size.width / 2 - Self.maxTopRadius,
+               y: screenFrame.maxY - size.height,
+               width: size.width + Self.maxTopRadius * 2,
+               height: size.height + 2)
     }
 
     // MARK: - Factories

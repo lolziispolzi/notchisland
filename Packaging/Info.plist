@@ -28,8 +28,16 @@
 	<string>public.app-category.utilities</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSLocationUsageDescription</key>
+	<string>NotchIsland uses your location to show local weather.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>NotchIsland uses your location to show local weather.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>NotchIsland shows your upcoming events and adds events you create from the notch.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>NotchIsland shows your upcoming events and adds events you create from the notch.</string>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>NotchIsland shows what is playing in Music or Spotify and lets you control playback from the notch.</string>
+	<string>NotchIsland shows what is playing in Spotify or Music and lets you control playback from the notch.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 NotchIsland contributors. MIT License.</string>
 </dict>

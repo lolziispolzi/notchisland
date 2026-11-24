@@ -18,7 +18,7 @@ final class NotchGeometryTests: XCTestCase {
         let g = notched()
         XCTAssertEqual(g.panelFrame.midX, g.notchRect.midX)
         XCTAssertEqual(g.panelFrame.maxY, frame.maxY)
-        XCTAssertEqual(g.panelFrame.height, NotchGeometry.openSize.height)
+        XCTAssertEqual(g.panelFrame.height, NotchGeometry.maxOpenSize.height)
     }
 
     func testHoverRectCoversNotchAndTopEdge() {
@@ -35,7 +35,7 @@ final class NotchGeometryTests: XCTestCase {
 
     func testOpenRectContainsHoverRect() {
         let g = notched()
-        XCTAssertTrue(g.openRect.contains(g.hoverRect().insetBy(dx: 0, dy: 1)))
+        XCTAssertTrue(g.openRect(size: IslandSize.compact.openSize).contains(g.hoverRect().insetBy(dx: 0, dy: 1)))
     }
 
     func testFakeNotchUsesMenuBarHeight() {

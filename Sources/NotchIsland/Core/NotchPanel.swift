@@ -20,7 +20,10 @@ final class NotchPanel: NSPanel {
         ignoresMouseEvents = true
     }
 
-    // Never steal keyboard focus from the user's app.
-    override var canBecomeKey: Bool { false }
+    /// Only true while a text field in the island needs typing (e.g. adding an event).
+    var allowsKey = false
+
+    // Otherwise never steal keyboard focus from the user's app.
+    override var canBecomeKey: Bool { allowsKey }
     override var canBecomeMain: Bool { false }
 }

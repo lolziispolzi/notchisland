@@ -91,6 +91,17 @@ struct PlaybackUpdate: Equatable {
         return PlaybackUpdate(state: state, track: track, position: number(lines[5]))
     }
 
+    /// Parses the output of `NowPlayingService.modesScript(for:)`: two lines, "true"/"false".
+    static func modes(from output: String) -> (shuffle: Bool, repeating: Bool)? {
+        let lines = output.lowercased().components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        guard lines.count >= 2,
+              ["true", "false"].contains(lines[0]),
+              ["true", "false"].contains(lines[1])
+        else { return nil }
+        return (lines[0] == "true", lines[1] == "true")
+    }
+
     /// Parses an AppleScript number, which may use a comma as decimal separator.
     static func number(_ string: String) -> Double? {
         Double(string.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: "."))
@@ -107,6 +118,8 @@ final class NowPlayingService: ObservableObject {
     @Published private(set) var track: Track?
     @Published private(set) var isPlaying = false
     @Published private(set) var artwork: NSImage?
+    @Published private(set) var shuffle = false
+    @Published private(set) var repeating = false
 
     private var position: Double = 0
     private var positionDate = Date()
@@ -158,6 +171,34 @@ final class NowPlayingService: ObservableObject {
 
     func previous() { send("previous track") }
 
+    func toggleShuffle() {
+        guard let player else { return }
+        send(player == .spotify ? "set shuffling to not shuffling" : "set shuffle enabled to not shuffle enabled")
+        shuffle.toggle()
+    }
+
+    func toggleRepeat() {
+        guard let player else { return }
+        send(player == .spotify
+             ? "set repeating to not repeating"
+             : "if song repeat is off then set song repeat to all else set song repeat to off")
+        repeating.toggle()
+    }
+
+    func seek(to seconds: Double) {
+        let target = max(0, seconds)
+        // String(format:) always uses "." as decimal separator, which AppleScript expects.
+        send("set player position to \(String(format: "%.1f", target))")
+        setPosition(target)
+    }
+
+    /// Brings the current player (or Spotify) to the front.
+    func openPlayer() {
+        let bundleID = (player ?? .spotify).bundleID
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return }
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    }
+
     private func send(_ command: String) {
         guard let player, player.isRunning else { return }
         Task { _ = await AppleScript.run("tell application \"\(player.appName)\" to \(command)") }
@@ -193,6 +234,19 @@ final class NowPlayingService: ObservableObject {
         }
     }
 
+    /// Reads shuffle and repeat state. Called on open and on track change.
+    func refreshModes() {
+        guard let player, player.isRunning else { return }
+        Task {
+            guard let output = await AppleScript.run(Self.modesScript(for: player)),
+                  let modes = PlaybackUpdate.modes(from: output),
+                  self.player == player
+            else { return }
+            shuffle = modes.shuffle
+            repeating = modes.repeating
+        }
+    }
+
     // MARK: - State
 
     private func handle(_ update: PlaybackUpdate, from source: MediaPlayer) {
@@ -209,6 +263,7 @@ final class NowPlayingService: ObservableObject {
                 track = newTrack
                 setPosition(0)
                 loadArtwork(for: source, track: newTrack)
+                refreshModes()
             } else {
                 setPosition(current)
             }
@@ -288,6 +343,15 @@ final class NowPlayingService: ObservableObject {
     close access fileRef
     return filePath
     """
+
+    static func modesScript(for player: MediaPlayer) -> String {
+        switch player {
+        case .spotify:
+            "tell application \"Spotify\" to return ((shuffling) as string) & linefeed & ((repeating) as string)"
+        case .music:
+            "tell application \"Music\" to return ((shuffle enabled) as string) & linefeed & ((song repeat is not off) as string)"
+        }
+    }
 
     static let spotifyArtworkScript = """
     tell application "Spotify" to return artwork url of current track

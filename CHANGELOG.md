@@ -5,6 +5,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- Weather widget: current location or a searched city, current conditions and 5-day forecast, °C or °F.
+- Calendar widget: upcoming events, add events with an alert from the notch, delete from the context menu.
+- Heads-up next to the notch before your next event.
+- Sports widget: pick a league and favorite team for live scores, results and upcoming games. Live score shows next to the notch.
+- Drop zone: copy or move files to Desktop, Downloads, iCloud Drive, Dropbox, Google Drive, OneDrive or custom folders; share menu; copy to clipboard.
+- Now playing: shuffle, repeat, drag to seek, click artwork to open the player.
+- Customize bar in the island to show, hide and reorder widgets and change the island size.
+- Island sizes: compact, regular, large.
+- Settings window with tabs for General, Layout, Weather, Sports, Calendar and Drop Zone.
+- `scripts/run-app.sh` to build and launch the app bundle locally.
+
+### Changed
+- The file shelf is now the Drop Zone widget.
+- The home tab is now the Now Playing widget.
+
 ## [0.1.0]
 
 ### Added

@@ -31,7 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showSettings() {
-        settingsWindow.show(settings: settings)
+        guard let viewModel else { return }
+        settingsWindow.show(settings: settings, viewModel: viewModel)
     }
 
     private func setUpStatusItem() {

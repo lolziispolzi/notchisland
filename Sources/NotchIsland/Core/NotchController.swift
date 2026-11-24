@@ -20,11 +20,7 @@ final class NotchController {
         self.settings = settings
         panel = NotchPanel(frame: viewModel.geometry.panelFrame)
 
-        let root = NotchView(vm: viewModel,
-                             settings: settings,
-                             nowPlaying: viewModel.nowPlaying,
-                             battery: viewModel.battery,
-                             shelf: viewModel.shelf)
+        let root = NotchView(vm: viewModel, settings: settings)
         let hosting = NSHostingView(rootView: root)
         hosting.frame = NSRect(origin: .zero, size: viewModel.geometry.panelFrame.size)
         hosting.autoresizingMask = [.width, .height]
@@ -38,6 +34,21 @@ final class NotchController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.reposition() }
             .store(in: &cancellables)
+
+        // Let the panel take the keyboard only while a text field needs it.
+        viewModel.$wantsKeyboard
+            .removeDuplicates()
+            .sink { [weak self] wants in self?.setKeyboardEnabled(wants) }
+            .store(in: &cancellables)
+    }
+
+    private func setKeyboardEnabled(_ enabled: Bool) {
+        panel.allowsKey = enabled
+        if enabled {
+            panel.makeKeyAndOrderFront(nil)
+        } else if panel.isKeyWindow {
+            panel.resignKey()
+        }
     }
 
     func reposition() {
@@ -72,9 +83,14 @@ final class NotchController {
         let geometry = vm.geometry
 
         if vm.isOpen {
+            // Typing in the island: stay open until the form is done.
+            if vm.wantsKeyboard {
+                cancelClose()
+                return
+            }
             // Keep it open while a button is held, so dragging a file out of the shelf works.
             let buttonHeld = event.type != .leftMouseUp && NSEvent.pressedMouseButtons != 0
-            if geometry.openRect.contains(point) || buttonHeld {
+            if geometry.openRect(size: vm.openSize).contains(point) || buttonHeld {
                 cancelClose()
             } else {
                 scheduleClose()
@@ -85,8 +101,8 @@ final class NotchController {
         let inside = geometry.hoverRect(extraWidth: vm.closedExtraWidth).contains(point)
         switch event.type {
         case .leftMouseDragged:
-            if inside, settings.showShelf, Self.dragHasFiles() {
-                open(tab: .shelf)
+            if inside, settings.isVisible(.drop), Self.dragHasFiles() {
+                open(tab: .drop)
             }
         case .leftMouseDown:
             if inside, !settings.openOnHover {
@@ -106,7 +122,7 @@ final class NotchController {
 
     // MARK: - Open / close
 
-    private func open(tab: NotchTab? = nil) {
+    private func open(tab: WidgetKind? = nil) {
         cancelOpen()
         cancelClose()
         if let tab { vm.tab = tab }
@@ -123,7 +139,7 @@ final class NotchController {
 
     private func close() {
         vm.isOpen = false
-        vm.isDropTargeted = false
+        vm.didClose()
         panel.ignoresMouseEvents = true
     }
 

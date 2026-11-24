@@ -3,16 +3,15 @@ import SwiftUI
 /// Small content on both sides of the notch while the island is closed.
 struct ClosedActivityView: View {
     let activity: ClosedActivity
-    let notchWidth: CGFloat
-    @ObservedObject var nowPlaying: NowPlayingService
-    @ObservedObject var battery: BatteryService
+    @ObservedObject var vm: NotchViewModel
 
     var body: some View {
         HStack(spacing: 0) {
             leading.frame(width: activity.sideWidth)
-            Spacer(minLength: notchWidth)
+            Spacer(minLength: vm.geometry.notchRect.width)
             trailing.frame(width: activity.sideWidth)
         }
+        .font(.system(size: 11, weight: .semibold))
         .foregroundStyle(.white)
     }
 
@@ -20,10 +19,27 @@ struct ClosedActivityView: View {
     private var leading: some View {
         switch activity {
         case .nowPlaying:
-            ArtworkView(image: nowPlaying.artwork, size: 22, cornerRadius: 6)
+            ArtworkView(image: vm.nowPlaying.artwork, size: 22, cornerRadius: 6)
         case .charging:
             Text("Charging")
-                .font(.system(size: 11, weight: .semibold))
+        case .liveScore:
+            if let game = vm.sports.snapshot?.featured {
+                HStack(spacing: 4) {
+                    Circle().fill(Color.red).frame(width: 5, height: 5)
+                    Text("\(game.away.team.shortLabel) \(game.away.score ?? "0")")
+                        .monospacedDigit()
+                        .lineLimit(1)
+                }
+            }
+        case .upcomingEvent:
+            if let event = vm.calendar.headsUp {
+                HStack(spacing: 4) {
+                    Circle().fill(event.color).frame(width: 5, height: 5)
+                    Text(event.title)
+                        .lineLimit(1)
+                }
+                .padding(.leading, 6)
+            }
         case .none:
             EmptyView()
         }
@@ -37,12 +53,25 @@ struct ClosedActivityView: View {
                 .frame(width: 18, height: 14)
         case .charging:
             HStack(spacing: 3) {
-                Text("\(battery.info?.percent ?? 0)%")
-                    .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                Text("\(vm.battery.info?.percent ?? 0)%")
+                    .monospacedDigit()
                 Image(systemName: "bolt.fill")
                     .font(.system(size: 10))
             }
             .foregroundStyle(.green)
+        case .liveScore:
+            if let game = vm.sports.snapshot?.featured {
+                Text("\(game.home.score ?? "0") \(game.home.team.shortLabel)")
+                    .monospacedDigit()
+                    .lineLimit(1)
+            }
+        case .upcomingEvent:
+            if let event = vm.calendar.headsUp {
+                TimelineView(.periodic(from: .now, by: 30)) { context in
+                    Text(RelativeTime.countdown(to: event.start, from: context.date))
+                }
+                .foregroundStyle(.orange)
+            }
         case .none:
             EmptyView()
         }
