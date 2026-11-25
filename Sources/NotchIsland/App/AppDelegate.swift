@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var viewModel: NotchViewModel?
     private var controller: NotchController?
     private var desktopLyrics: DesktopLyricsController?
+    private var edgeGlow: EdgeGlowController?
+    private var lockScreen: LockScreenController?
     private var statusItem: NSStatusItem?
     private var cancellables = Set<AnyCancellable>()
 
@@ -17,6 +19,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.viewModel = viewModel
         controller = NotchController(viewModel: viewModel, settings: settings)
         desktopLyrics = DesktopLyricsController(viewModel: viewModel)
+        let glow = EdgeGlowController(viewModel: viewModel)
+        edgeGlow = glow
+        lockScreen = LockScreenController(viewModel: viewModel, glow: glow)
 
         setUpStatusItem()
 
@@ -31,6 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func screensChanged() {
         controller?.reposition()
         desktopLyrics?.update()
+        edgeGlow?.update()
+        lockScreen?.update()
     }
 
     @objc private func showSettings() {

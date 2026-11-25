@@ -17,12 +17,14 @@ struct SettingsView: View {
                 .tabItem { Label("Sports", systemImage: "sportscourt") }
             LyricsSettings(settings: settings, lyrics: vm.lyrics)
                 .tabItem { Label("Lyrics", systemImage: "quote.bubble") }
+            LockScreenSettings(settings: settings, audio: vm.audio)
+                .tabItem { Label("Lock Screen", systemImage: "lock.display") }
             CalendarSettings(settings: settings, calendar: vm.calendar)
                 .tabItem { Label("Calendar", systemImage: "calendar") }
             DropSettings(settings: settings, shelf: vm.shelf)
                 .tabItem { Label("Drop Zone", systemImage: "tray.and.arrow.down") }
         }
-        .frame(width: 580, height: 560)
+        .frame(width: 640, height: 580)
     }
 
     static var version: String {
@@ -380,6 +382,61 @@ private struct LyricsSettings: View {
                     .foregroundStyle(.secondary)
             }
             .disabled(!settings.lyricsEnabled)
+        }
+        .formStyle(.grouped)
+    }
+}
+
+// MARK: - Lock screen and glow
+
+private struct LockScreenSettings: View {
+    @ObservedObject var settings: AppSettings
+    @ObservedObject var audio: AudioLevelMonitor
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Show the player on the lock screen", isOn: $settings.lockScreenEnabled)
+                    .disabled(!LockScreenController.isSupported)
+                Picker("Lyrics on the lock screen", selection: $settings.lockScreenLyricsStyle) {
+                    ForEach(DesktopLyricsStyle.allCases.filter { $0 != .coverAndLyrics }) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                .disabled(!settings.lockScreenEnabled || !settings.lyricsEnabled)
+            } header: {
+                Text("Lock screen")
+            } footer: {
+                Text(LockScreenController.isSupported
+                     ? "Experimental. macOS has no public way to draw on the lock screen, so this uses a private system interface. It may stop working after a macOS update."
+                     : "Not available on this version of macOS.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Glow around the screen edge while music plays", isOn: $settings.edgeGlowEnabled)
+                Toggle("Pulse with the sound", isOn: $settings.edgeGlowReactsToAudio)
+                    .disabled(!settings.edgeGlowEnabled)
+                if settings.edgeGlowReactsToAudio, audio.state == .unavailable {
+                    HStack {
+                        Text("Needs Screen & System Audio Recording permission.")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                        Button("Open Privacy Settings") {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                    }
+                }
+            } header: {
+                Text("Edge glow")
+            } footer: {
+                Text("The glow takes the album's color. Without \"Pulse with the sound\" it flashes as each lyric line starts. With it, NotchIsland measures how loud your Mac's sound is; it never records or saves audio.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
     }

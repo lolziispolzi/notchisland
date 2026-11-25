@@ -13,6 +13,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Added
 - Notes widget: sticky notes with colors and pinning, saved locally.
 - Lyrics: synced lyrics from LRCLIB in the Music tab, the current line under the closed notch, and desktop lyrics in three styles with album-color backgrounds. Timing offset in Settings.
+- Stars lyrics style, edge glow that follows the notch, and an experimental lock-screen player with lyrics.
 - Header buttons beside the notch work even when macOS gives the click to the menu bar.
 - Weather widget: current location or a searched city, current conditions and 5-day forecast, °C or °F.
 - Calendar widget: upcoming events, add events with an alert from the notch, delete from the context menu.

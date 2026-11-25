@@ -126,6 +126,8 @@ enum DesktopLyricsStyle: String, CaseIterable, Identifiable {
     case bigLyrics
     /// One line near the bottom of the screen.
     case bottomLine
+    /// Words light up as stars joined into a constellation.
+    case stars
 
     var id: String { rawValue }
 
@@ -135,6 +137,7 @@ enum DesktopLyricsStyle: String, CaseIterable, Identifiable {
         case .coverAndLyrics: "Cover and lyrics"
         case .bigLyrics: "Big lyrics"
         case .bottomLine: "Bottom line"
+        case .stars: "Stars"
         }
     }
 }
@@ -185,6 +188,10 @@ final class AppSettings: ObservableObject {
         static let desktopLyricsStyle = "desktopLyricsStyle"
         static let desktopLyricsTint = "desktopLyricsTint"
         static let desktopLyricsSize = "desktopLyricsSize"
+        static let lockScreenEnabled = "lockScreenEnabled"
+        static let lockScreenLyricsStyle = "lockScreenLyricsStyle"
+        static let edgeGlowEnabled = "edgeGlowEnabled"
+        static let edgeGlowReactsToAudio = "edgeGlowReactsToAudio"
     }
 
     private let defaults: UserDefaults
@@ -291,6 +298,24 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(desktopLyricsSize.rawValue, forKey: Key.desktopLyricsSize) }
     }
 
+    // MARK: Lock screen and glow
+
+    /// Show the player (and lyrics) on the lock screen. Uses a private macOS API.
+    @Published var lockScreenEnabled: Bool {
+        didSet { defaults.set(lockScreenEnabled, forKey: Key.lockScreenEnabled) }
+    }
+    @Published var lockScreenLyricsStyle: DesktopLyricsStyle {
+        didSet { defaults.set(lockScreenLyricsStyle.rawValue, forKey: Key.lockScreenLyricsStyle) }
+    }
+    /// A line of light around the screen edge while music plays.
+    @Published var edgeGlowEnabled: Bool {
+        didSet { defaults.set(edgeGlowEnabled, forKey: Key.edgeGlowEnabled) }
+    }
+    /// Pulse with the actual sound. Needs Screen & System Audio Recording permission.
+    @Published var edgeGlowReactsToAudio: Bool {
+        didSet { defaults.set(edgeGlowReactsToAudio, forKey: Key.edgeGlowReactsToAudio) }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaults.register(defaults: [
@@ -314,6 +339,10 @@ final class AppSettings: ObservableObject {
             Key.desktopLyricsStyle: DesktopLyricsStyle.coverAndLyrics.rawValue,
             Key.desktopLyricsTint: true,
             Key.desktopLyricsSize: LyricsTextSize.medium.rawValue,
+            Key.lockScreenEnabled: false,
+            Key.lockScreenLyricsStyle: DesktopLyricsStyle.stars.rawValue,
+            Key.edgeGlowEnabled: false,
+            Key.edgeGlowReactsToAudio: false,
         ])
 
         openOnHover = defaults.bool(forKey: Key.openOnHover)
@@ -347,6 +376,11 @@ final class AppSettings: ObservableObject {
         desktopLyricsStyle = DesktopLyricsStyle(rawValue: defaults.string(forKey: Key.desktopLyricsStyle) ?? "") ?? .coverAndLyrics
         desktopLyricsTint = defaults.bool(forKey: Key.desktopLyricsTint)
         desktopLyricsSize = LyricsTextSize(rawValue: defaults.string(forKey: Key.desktopLyricsSize) ?? "") ?? .medium
+
+        lockScreenEnabled = defaults.bool(forKey: Key.lockScreenEnabled)
+        lockScreenLyricsStyle = DesktopLyricsStyle(rawValue: defaults.string(forKey: Key.lockScreenLyricsStyle) ?? "") ?? .stars
+        edgeGlowEnabled = defaults.bool(forKey: Key.edgeGlowEnabled)
+        edgeGlowReactsToAudio = defaults.bool(forKey: Key.edgeGlowReactsToAudio)
 
         // Never start with every widget hidden.
         if visibleWidgets.isEmpty { hiddenWidgets = [] }

@@ -20,6 +20,9 @@ Hover over the notch and it expands into a panel with your music, weather, calen
 - **Calendar:** your upcoming events for the week. Add an event from the notch with a title, time, duration and alert. The alert is saved on the event, so Calendar reminds you on every device.
 - **Sports:** pick a league and your favorite team. See the live score, the latest result and the next games. NFL, NBA, WNBA, MLB, NHL, MLS, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and US college football and basketball.
 - **Lyrics:** time-synced lyrics for whatever plays in Spotify or Music. See them scroll in the island, follow the current line under the closed notch, or show them on your desktop in one of three styles, with the desktop tinted in the album's colors.
+- **Stars:** a lyrics style where each sung word lights a star in a constellation, with the current word glowing large underneath.
+- **Edge glow:** a line of light around the screen edge, following the notch, in the album's color. It flashes with each lyric line, or pulses with the actual sound if you allow audio metering.
+- **Lock screen (experimental, off by default):** a glass player and lyrics on the lock screen, so you can play, pause and skip before you sign in.
 - **Notes:** sticky notes in the notch. Write a quick note, color it, and pin important ones to the top. Saved on your Mac only.
 - **Drop zone:** drag files onto the notch to park them. Then copy or move them to Desktop, Downloads, iCloud Drive, Dropbox, Google Drive, OneDrive or any folder; share them; AirDrop them; copy them to the clipboard; or drag them out.
 - **Live activities while closed:** live score while your team plays, a heads-up before your next event, music artwork with animated bars, and a "Charging" pill when you plug in.
@@ -49,6 +52,7 @@ Hover over the notch and it expands into a panel with your music, weather, calen
 | Location | First time the Weather widget loads with "Use my current location" on | Local weather. You can pick a city instead. |
 | Calendars | When you press "Allow Calendar Access" | Show events and add new ones |
 | Files in Desktop, Documents or Downloads | First time you copy into one of those folders | Copy or move files from the drop zone |
+| Screen & System Audio Recording | When you turn on "Pulse with the sound" for the edge glow | Measure how loud the sound is. Audio is never recorded or saved. |
 
 Hover detection uses mouse-move events, which do not require Accessibility access.
 
@@ -123,6 +127,10 @@ The default build is ad-hoc signed. See [docs/RELEASING.md](docs/RELEASING.md) f
 ### Why not MediaRemote?
 
 Most notch apps used the private `MediaRemote` framework to read now-playing info from any app. Since macOS 15.4, Apple blocks it for third-party apps. NotchIsland supports Spotify and Music through their public notifications and AppleScript dictionaries instead. Support for other players is a welcome contribution.
+
+### About the lock screen
+
+macOS has no public API for drawing on the lock screen. NotchIsland uses the private SkyLight framework, as other notch apps do, to put its windows in a space above the lock screen. The functions are looked up at run time; if a macOS update removes them, the setting turns itself off. This is why the feature is off by default and marked experimental. All of it is in `Services/LockScreenSpace.swift`.
 
 ### About the sports data
 

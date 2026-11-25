@@ -4,18 +4,29 @@ import SwiftUI
 struct DesktopLyricsView: View {
     @ObservedObject var vm: NotchViewModel
     @ObservedObject var settings: AppSettings
+    /// Used by the lock screen, which has its own style setting.
+    var styleOverride: DesktopLyricsStyle?
+    /// The lock screen never fills the screen, so the login controls stay visible.
+    var allowsBackdrop = true
 
     private var scale: CGFloat { settings.desktopLyricsSize.scale }
     private var nowPlaying: NowPlayingService { vm.nowPlaying }
+    private var style: DesktopLyricsStyle { styleOverride ?? settings.desktopLyricsStyle }
 
     var body: some View {
         ZStack {
-            if settings.desktopLyricsTint {
+            if allowsBackdrop, settings.desktopLyricsTint {
                 AlbumBackdrop(colors: nowPlaying.palette)
                     .transition(.opacity)
             }
 
-            switch settings.desktopLyricsStyle {
+            switch style {
+            case .stars:
+                ConstellationLyricsView(nowPlaying: nowPlaying,
+                                        lyrics: vm.lyrics,
+                                        settings: settings,
+                                        color: nowPlaying.accentColor,
+                                        scale: scale)
             case .coverAndLyrics:
                 coverAndLyrics
             case .bigLyrics:
@@ -64,7 +75,7 @@ struct DesktopLyricsView: View {
                 .frame(width: 640 * scale, height: 460 * scale)
         }
         .foregroundStyle(.white)
-        .shadow(color: .black.opacity(settings.desktopLyricsTint ? 0 : 0.6), radius: 8)
+        .shadow(color: .black.opacity(allowsBackdrop && settings.desktopLyricsTint ? 0 : 0.6), radius: 8)
     }
 
     // MARK: - Big lyrics
@@ -91,7 +102,7 @@ struct DesktopLyricsView: View {
             }
         }
         .foregroundStyle(.white)
-        .shadow(color: .black.opacity(settings.desktopLyricsTint ? 0 : 0.6), radius: 10)
+        .shadow(color: .black.opacity(allowsBackdrop && settings.desktopLyricsTint ? 0 : 0.6), radius: 10)
     }
 
     // MARK: - Bottom line

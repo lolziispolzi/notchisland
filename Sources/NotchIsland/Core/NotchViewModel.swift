@@ -44,6 +44,8 @@ final class NotchViewModel: ObservableObject {
     let calendar: CalendarService
     let notes = NotesStore()
     let lyrics: LyricsService
+    /// Not forwarded to `objectWillChange`: it updates 30 times a second and only the glow reads it.
+    let audio = AudioLevelMonitor()
 
     /// Set by the app delegate.
     var openSettings: () -> Void = {}

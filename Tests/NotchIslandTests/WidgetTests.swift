@@ -443,3 +443,67 @@ final class PaletteTests: XCTestCase {
         XCTAssertEqual(ArtworkPalette.hueDistance(0.05, 0.95), 0.1, accuracy: 0.0001)
     }
 }
+
+final class StarsAndGlowTests: XCTestCase {
+    func testConstellationLayoutIsDeterministicAndInBounds() {
+        let size = CGSize(width: 600, height: 240)
+        let a = ConstellationLayout.points(count: 6, seed: 42, size: size)
+        let b = ConstellationLayout.points(count: 6, seed: 42, size: size)
+        let c = ConstellationLayout.points(count: 6, seed: 43, size: size)
+        XCTAssertEqual(a, b)
+        XCTAssertNotEqual(a, c)
+        XCTAssertEqual(a.count, 6)
+        for point in a {
+            XCTAssertTrue((0...size.width).contains(point.x))
+            XCTAssertTrue((0...size.height).contains(point.y))
+        }
+        // Stars run left to right.
+        XCTAssertLessThan(a.first!.x, a.last!.x)
+        XCTAssertTrue(ConstellationLayout.points(count: 0, seed: 1, size: size).isEmpty)
+    }
+
+    func testConstellationFrameRevealsWordsOverTheLine() {
+        let lines = LRC.parse("[00:10.00]Turn down the lights\n[00:14.00]Next")
+        XCTAssertNil(ConstellationFrame.make(lines: lines, elapsed: 5))
+
+        let start = ConstellationFrame.make(lines: lines, elapsed: 10.01)
+        XCTAssertEqual(start?.visibleCount, 1)
+        XCTAssertEqual(start?.currentWord, "Turn")
+
+        let middle = ConstellationFrame.make(lines: lines, elapsed: 11.8)
+        XCTAssertEqual(middle?.visibleCount, 3)
+        XCTAssertEqual(middle?.currentWord, "the")
+
+        let end = ConstellationFrame.make(lines: lines, elapsed: 13.9)
+        XCTAssertEqual(end?.visibleCount, 4)
+        XCTAssertEqual(end?.words, ["Turn", "down", "the", "lights"])
+
+        let breakLine = ConstellationFrame.make(lines: LRC.parse("[00:01.00]"), elapsed: 2)
+        XCTAssertEqual(breakLine?.currentWord, "♪")
+    }
+
+    func testGlowPulse() {
+        let calm = GlowPulse.intensity(sinceLineStart: nil, time: 0)
+        let flash = GlowPulse.intensity(sinceLineStart: 0, time: 0)
+        let faded = GlowPulse.intensity(sinceLineStart: 2, time: 0)
+        XCTAssertGreaterThan(flash, calm)
+        XCTAssertEqual(faded, calm, accuracy: 0.0001)
+        XCTAssertLessThanOrEqual(flash, 1)
+    }
+
+    func testScreenOutlineDipsAroundNotch() {
+        let rect = CGRect(x: 0, y: 0, width: 1512, height: 982)
+        let notch = CGRect(x: 663, y: 0, width: 186, height: 32)
+        let path = ScreenOutline(notch: notch).path(in: rect)
+        XCTAssertEqual(path.boundingRect, rect)
+        XCTAssertTrue(path.contains(CGPoint(x: 100, y: 100)))
+        // Inside the notch dip is outside the outline.
+        XCTAssertFalse(path.contains(CGPoint(x: 756, y: 10)))
+    }
+
+    func testAudioLevelNormalization() {
+        XCTAssertEqual(AudioLevelOutput.normalized(rms: 1), 1, accuracy: 0.0001)
+        XCTAssertEqual(AudioLevelOutput.normalized(rms: 0), 0, accuracy: 0.0001)
+        XCTAssertEqual(AudioLevelOutput.normalized(rms: 0.0316), 0.4, accuracy: 0.01)
+    }
+}
