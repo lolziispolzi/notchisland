@@ -11,9 +11,7 @@ struct NotchView: View {
     private var bottomRadius: CGFloat { vm.isOpen ? 32 : 10 }
 
     private var size: CGSize {
-        if vm.isOpen { return vm.openSize }
-        let notch = vm.geometry.notchRect.size
-        return CGSize(width: notch.width + vm.closedExtraWidth, height: notch.height)
+        vm.isOpen ? vm.openSize : vm.closedSize
     }
 
     private let spring = Animation.spring(response: 0.38, dampingFraction: 0.8)
@@ -49,6 +47,7 @@ struct NotchView: View {
         .animation(spring, value: vm.isOpen)
         .animation(spring, value: activity)
         .animation(spring, value: vm.isEditing)
+        .animation(spring, value: vm.showsClosedLyrics)
         .animation(spring, value: settings.islandSize)
         .preferredColorScheme(.dark)
     }
@@ -175,10 +174,20 @@ struct MediaView: View {
     @ObservedObject var vm: NotchViewModel
 
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
-            NowPlayingView(nowPlaying: vm.nowPlaying)
-            Spacer(minLength: 0)
-            ClockView()
+        if vm.mediaShowsLyrics, vm.nowPlaying.track != nil {
+            HStack(alignment: .center, spacing: 16) {
+                CompactPlayer(nowPlaying: vm.nowPlaying) { vm.mediaShowsLyrics = false }
+                    .frame(width: 140, alignment: .leading)
+                LyricsLinesView(nowPlaying: vm.nowPlaying, lyrics: vm.lyrics, fontSize: 15)
+            }
+        } else {
+            HStack(alignment: .center, spacing: 16) {
+                NowPlayingView(nowPlaying: vm.nowPlaying,
+                               showsLyricsButton: vm.settings.lyricsEnabled,
+                               onShowLyrics: { vm.mediaShowsLyrics = true })
+                Spacer(minLength: 0)
+                ClockView()
+            }
         }
     }
 }

@@ -118,6 +118,42 @@ enum TemperatureUnit: String, CaseIterable, Identifiable {
     }
 }
 
+enum DesktopLyricsStyle: String, CaseIterable, Identifiable {
+    case off
+    /// Cover, title and progress on the left, scrolling lyrics on the right.
+    case coverAndLyrics
+    /// Big centered lyrics.
+    case bigLyrics
+    /// One line near the bottom of the screen.
+    case bottomLine
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .off: "Off"
+        case .coverAndLyrics: "Cover and lyrics"
+        case .bigLyrics: "Big lyrics"
+        case .bottomLine: "Bottom line"
+        }
+    }
+}
+
+enum LyricsTextSize: String, CaseIterable, Identifiable {
+    case small, medium, large
+
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+
+    var scale: CGFloat {
+        switch self {
+        case .small: 0.8
+        case .medium: 1
+        case .large: 1.3
+        }
+    }
+}
+
 /// User preferences, persisted in UserDefaults.
 @MainActor
 final class AppSettings: ObservableObject {
@@ -143,6 +179,12 @@ final class AppSettings: ObservableObject {
         static let newEventAlertMinutes = "newEventAlertMinutes"
         static let customDropFolders = "customDropFolders"
         static let removeAfterCopy = "removeAfterCopy"
+        static let lyricsEnabled = "lyricsEnabled"
+        static let lyricsUnderNotch = "lyricsUnderNotch"
+        static let lyricsOffset = "lyricsOffset"
+        static let desktopLyricsStyle = "desktopLyricsStyle"
+        static let desktopLyricsTint = "desktopLyricsTint"
+        static let desktopLyricsSize = "desktopLyricsSize"
     }
 
     private let defaults: UserDefaults
@@ -224,6 +266,31 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(removeAfterCopy, forKey: Key.removeAfterCopy) }
     }
 
+    // MARK: Lyrics
+
+    /// Look up lyrics on LRCLIB for the playing song.
+    @Published var lyricsEnabled: Bool {
+        didSet { defaults.set(lyricsEnabled, forKey: Key.lyricsEnabled) }
+    }
+    /// Show the line being sung under the closed notch.
+    @Published var lyricsUnderNotch: Bool {
+        didSet { defaults.set(lyricsUnderNotch, forKey: Key.lyricsUnderNotch) }
+    }
+    /// Seconds to shift lyrics. Positive shows them earlier.
+    @Published var lyricsOffset: Double {
+        didSet { defaults.set(lyricsOffset, forKey: Key.lyricsOffset) }
+    }
+    @Published var desktopLyricsStyle: DesktopLyricsStyle {
+        didSet { defaults.set(desktopLyricsStyle.rawValue, forKey: Key.desktopLyricsStyle) }
+    }
+    /// Fill the desktop with the album's colors behind the lyrics.
+    @Published var desktopLyricsTint: Bool {
+        didSet { defaults.set(desktopLyricsTint, forKey: Key.desktopLyricsTint) }
+    }
+    @Published var desktopLyricsSize: LyricsTextSize {
+        didSet { defaults.set(desktopLyricsSize.rawValue, forKey: Key.desktopLyricsSize) }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaults.register(defaults: [
@@ -241,6 +308,12 @@ final class AppSettings: ObservableObject {
             Key.eventHeadsUpMinutes: 10,
             Key.newEventAlertMinutes: 10,
             Key.removeAfterCopy: false,
+            Key.lyricsEnabled: true,
+            Key.lyricsUnderNotch: true,
+            Key.lyricsOffset: 0.0,
+            Key.desktopLyricsStyle: DesktopLyricsStyle.coverAndLyrics.rawValue,
+            Key.desktopLyricsTint: true,
+            Key.desktopLyricsSize: LyricsTextSize.medium.rawValue,
         ])
 
         openOnHover = defaults.bool(forKey: Key.openOnHover)
@@ -267,6 +340,13 @@ final class AppSettings: ObservableObject {
 
         customDropFolders = defaults.stringArray(forKey: Key.customDropFolders) ?? []
         removeAfterCopy = defaults.bool(forKey: Key.removeAfterCopy)
+
+        lyricsEnabled = defaults.bool(forKey: Key.lyricsEnabled)
+        lyricsUnderNotch = defaults.bool(forKey: Key.lyricsUnderNotch)
+        lyricsOffset = defaults.double(forKey: Key.lyricsOffset)
+        desktopLyricsStyle = DesktopLyricsStyle(rawValue: defaults.string(forKey: Key.desktopLyricsStyle) ?? "") ?? .coverAndLyrics
+        desktopLyricsTint = defaults.bool(forKey: Key.desktopLyricsTint)
+        desktopLyricsSize = LyricsTextSize(rawValue: defaults.string(forKey: Key.desktopLyricsSize) ?? "") ?? .medium
 
         // Never start with every widget hidden.
         if visibleWidgets.isEmpty { hiddenWidgets = [] }

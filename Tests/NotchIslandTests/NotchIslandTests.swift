@@ -29,8 +29,13 @@ final class NotchGeometryTests: XCTestCase {
 
     func testHoverRectGrowsWithLiveActivity() {
         let g = notched()
-        XCTAssertEqual(g.hoverRect(extraWidth: 80).width, g.hoverRect().width + 80)
-        XCTAssertEqual(g.hoverRect(extraWidth: 80).midX, g.notchRect.midX)
+        let wider = CGSize(width: g.notchRect.width + 80, height: g.notchRect.height)
+        XCTAssertEqual(g.hoverRect(closedSize: wider).width, g.hoverRect().width + 80)
+        XCTAssertEqual(g.hoverRect(closedSize: wider).midX, g.notchRect.midX)
+        // Growing down for the lyrics row extends the hover area down, not up.
+        let taller = CGSize(width: g.notchRect.width, height: g.notchRect.height + 24)
+        XCTAssertEqual(g.hoverRect(closedSize: taller).maxY, g.hoverRect().maxY)
+        XCTAssertEqual(g.hoverRect(closedSize: taller).minY, g.hoverRect().minY - 24)
     }
 
     func testOpenRectContainsHoverRect() {

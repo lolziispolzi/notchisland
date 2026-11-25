@@ -338,3 +338,105 @@ final class HeaderHitTestTests: XCTestCase {
         XCTAssertNil(NotchViewModel.headerAction(at: CGPoint(x: 50, y: 60), in: targets))
     }
 }
+
+final class LyricsTests: XCTestCase {
+    func testParseLRC() {
+        let text = """
+        [ar:Some Artist]
+        [ti:Some Song]
+        [00:12.50]First line
+        [00:15.00][01:02.25]Chorus line
+        [00:20.10]
+        [00:18.3]Second line
+        not a lyric line
+        """
+        let lines = LRC.parse(text)
+        XCTAssertEqual(lines.map(\.text), ["First line", "Chorus line", "Second line", "", "Chorus line"])
+        XCTAssertEqual(lines.map(\.time), [12.5, 15, 18.3, 20.1, 62.25])
+        XCTAssertEqual(lines.map(\.id), [0, 1, 2, 3, 4])
+    }
+
+    func testParseOffset() {
+        let lines = LRC.parse("[offset:+500]\n[00:10.00]Line")
+        XCTAssertEqual(lines.first?.time, 9.5)
+    }
+
+    func testCurrentIndex() {
+        let lines = LRC.parse("[00:05.00]a\n[00:10.00]b\n[00:15.00]c")
+        XCTAssertNil(LRC.index(at: 2, in: lines))
+        XCTAssertEqual(LRC.index(at: 5, in: lines), 0)
+        XCTAssertEqual(LRC.index(at: 9.99, in: lines), 0)
+        XCTAssertEqual(LRC.index(at: 10, in: lines), 1)
+        XCTAssertEqual(LRC.index(at: 300, in: lines), 2)
+        XCTAssertNil(LRC.index(at: 10, in: []))
+    }
+
+    func testCleanTitleAndArtist() {
+        XCTAssertEqual(LRCLIB.cleanTitle("Let It Be - Remastered 2009"), "Let It Be")
+        XCTAssertEqual(LRCLIB.cleanTitle("Sweet (feat. Someone)"), "Sweet")
+        XCTAssertEqual(LRCLIB.cleanTitle("Song [Live]"), "Song")
+        XCTAssertEqual(LRCLIB.cleanTitle("(What's the Story) Morning Glory?"), "(What's the Story) Morning Glory?")
+        XCTAssertEqual(LRCLIB.primaryArtist("Artist A, Artist B"), "Artist A")
+        XCTAssertEqual(LRCLIB.primaryArtist("Simon & Garfunkel"), "Simon")
+        XCTAssertEqual(LRCLIB.primaryArtist("Solo"), "Solo")
+    }
+
+    func testRecordDecodingAndBestPick() throws {
+        let json = """
+        [
+          {"id": 1, "trackName": "Song", "artistName": "A", "duration": 300, "instrumental": false,
+           "plainLyrics": "x", "syncedLyrics": "[00:01.00]wrong length"},
+          {"id": 2, "trackName": "Song", "artistName": "A", "duration": 201, "instrumental": false,
+           "plainLyrics": "hello", "syncedLyrics": "[00:01.00]hello"},
+          {"id": 3, "trackName": "Song", "artistName": "A", "duration": 200, "instrumental": false,
+           "plainLyrics": "plain only", "syncedLyrics": null}
+        ]
+        """
+        let records = try JSONDecoder().decode([LRCLIB.Record].self, from: Data(json.utf8))
+        XCTAssertEqual(LRCLIB.best(records, duration: 200)?.id, 2)
+
+        let lyrics = try XCTUnwrap(LRCLIB.lyrics(from: records[2]))
+        XCTAssertFalse(lyrics.isSynced)
+        XCTAssertEqual(lyrics.plain, ["plain only"])
+
+        let empty = LRCLIB.Record(id: 4, trackName: nil, artistName: nil, albumName: nil, duration: nil,
+                                  instrumental: false, plainLyrics: nil, syncedLyrics: nil)
+        XCTAssertNil(LRCLIB.lyrics(from: empty))
+        let instrumental = LRCLIB.Record(id: 5, trackName: nil, artistName: nil, albumName: nil, duration: nil,
+                                         instrumental: true, plainLyrics: nil, syncedLyrics: nil)
+        XCTAssertEqual(LRCLIB.lyrics(from: instrumental)?.instrumental, true)
+    }
+
+    func testGetURL() {
+        let track = Track(title: "Spinning", artist: "Pentire", album: "", duration: 219.4)
+        let url = LRCLIB.getURL(for: track).absoluteString
+        XCTAssertTrue(url.hasPrefix("https://lrclib.net/api/get?"))
+        XCTAssertTrue(url.contains("track_name=Spinning"))
+        XCTAssertTrue(url.contains("duration=219"))
+        XCTAssertFalse(url.contains("album_name"))
+    }
+}
+
+final class PaletteTests: XCTestCase {
+    func testPaletteFindsStrongColors() throws {
+        let rep = try XCTUnwrap(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2, pixelsHigh: 2,
+                                                bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
+                                                isPlanar: false, colorSpaceName: .deviceRGB,
+                                                bytesPerRow: 0, bitsPerPixel: 0))
+        rep.setColor(.systemRed, atX: 0, y: 0)
+        rep.setColor(.systemRed, atX: 0, y: 1)
+        rep.setColor(.systemBlue, atX: 1, y: 0)
+        rep.setColor(.systemBlue, atX: 1, y: 1)
+        let image = NSImage(size: NSSize(width: 2, height: 2))
+        image.addRepresentation(rep)
+
+        let colors = ArtworkPalette.colors(from: image)
+        XCTAssertEqual(colors.count, 2)
+        let first = try XCTUnwrap(colors.first?.usingColorSpace(.sRGB))
+        XCTAssertGreaterThan(first.saturationComponent, 0.4)
+    }
+
+    func testHueDistanceWraps() {
+        XCTAssertEqual(ArtworkPalette.hueDistance(0.05, 0.95), 0.1, accuracy: 0.0001)
+    }
+}

@@ -33,13 +33,14 @@ struct NotchGeometry: Equatable {
                       height: height)
     }
 
-    /// Mouse entering this area opens the island.
-    /// `extraWidth` is how much wider a closed live activity makes the island.
-    func hoverRect(extraWidth: CGFloat = 0) -> NSRect {
-        NSRect(x: notchRect.minX - extraWidth / 2 - 12,
-               y: notchRect.minY - 6,
-               width: notchRect.width + extraWidth + 24,
-               height: notchRect.height + 8)
+    /// Mouse entering this area opens the island. `closedSize` is the size of the
+    /// closed island, which grows for live activities; it defaults to the notch.
+    func hoverRect(closedSize: CGSize? = nil) -> NSRect {
+        let size = closedSize ?? notchRect.size
+        return NSRect(x: notchRect.midX - size.width / 2 - 12,
+                      y: screenFrame.maxY - size.height - 6,
+                      width: size.width + 24,
+                      height: size.height + 8)
     }
 
     /// Mouse leaving this area closes the island.

@@ -6,10 +6,20 @@ struct ClosedActivityView: View {
     @ObservedObject var vm: NotchViewModel
 
     var body: some View {
-        HStack(spacing: 0) {
-            leading.frame(width: activity.sideWidth)
-            Spacer(minLength: vm.geometry.notchRect.width)
-            trailing.frame(width: activity.sideWidth)
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                leading.frame(width: activity.sideWidth)
+                Spacer(minLength: vm.geometry.notchRect.width)
+                trailing.frame(width: activity.sideWidth)
+            }
+            .frame(height: vm.geometry.notchRect.height)
+
+            if vm.showsClosedLyrics {
+                ClosedLyricLine(nowPlaying: vm.nowPlaying, lyrics: vm.lyrics)
+                    .padding(.horizontal, 16)
+                    .frame(height: NotchViewModel.closedLyricsHeight - 4)
+                    .transition(.opacity)
+            }
         }
         .font(.system(size: 11, weight: .semibold))
         .foregroundStyle(.white)

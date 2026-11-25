@@ -31,6 +31,8 @@ final class NotchViewModel: ObservableObject {
     @Published var isEditing = false
     /// A text field in the island needs the keyboard. Keeps the island open.
     @Published var wantsKeyboard = false
+    /// The Music tab shows lyrics instead of the full player.
+    @Published var mediaShowsLyrics = false
     @Published private(set) var transientActivity: ClosedActivity?
 
     let settings: AppSettings
@@ -41,6 +43,7 @@ final class NotchViewModel: ObservableObject {
     let sports: SportsService
     let calendar: CalendarService
     let notes = NotesStore()
+    let lyrics: LyricsService
 
     /// Set by the app delegate.
     var openSettings: () -> Void = {}
@@ -60,6 +63,7 @@ final class NotchViewModel: ObservableObject {
         weather = WeatherService(settings: settings)
         sports = SportsService(settings: settings)
         calendar = CalendarService(settings: settings)
+        lyrics = LyricsService(settings: settings, nowPlaying: nowPlaying)
 
         battery.onPluggedIn = { [weak self] in
             guard let self, self.settings.showLiveActivities, self.settings.showBattery else { return }
@@ -76,6 +80,7 @@ final class NotchViewModel: ObservableObject {
             sports.objectWillChange.eraseToAnyPublisher(),
             calendar.objectWillChange.eraseToAnyPublisher(),
             notes.objectWillChange.eraseToAnyPublisher(),
+            lyrics.objectWillChange.eraseToAnyPublisher(),
         ]
         Publishers.MergeMany(children)
             .sink { [weak self] in self?.objectWillChange.send() }
@@ -104,6 +109,27 @@ final class NotchViewModel: ObservableObject {
     }
 
     var closedExtraWidth: CGFloat { closedActivity.sideWidth * 2 }
+
+    /// While music plays, the closed island grows a row under the notch with the sung line.
+    var showsClosedLyrics: Bool {
+        closedActivity == .nowPlaying
+            && settings.lyricsEnabled
+            && settings.lyricsUnderNotch
+            && lyrics.lyrics?.isSynced == true
+    }
+
+    static let closedLyricsHeight: CGFloat = 24
+
+    /// Size of the closed island, including any live activity.
+    var closedSize: CGSize {
+        let notch = geometry.notchRect.size
+        var size = CGSize(width: notch.width + closedExtraWidth, height: notch.height)
+        if showsClosedLyrics {
+            size.width = max(size.width, notch.width + 220)
+            size.height += Self.closedLyricsHeight
+        }
+        return size
+    }
 
     /// Current size of the open island.
     var openSize: CGSize {

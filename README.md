@@ -19,6 +19,7 @@ Hover over the notch and it expands into a panel with your music, weather, calen
 - **Weather** for your current location or any city: current conditions, feels-like, humidity, wind and a 5-day forecast. Celsius or Fahrenheit.
 - **Calendar:** your upcoming events for the week. Add an event from the notch with a title, time, duration and alert. The alert is saved on the event, so Calendar reminds you on every device.
 - **Sports:** pick a league and your favorite team. See the live score, the latest result and the next games. NFL, NBA, WNBA, MLB, NHL, MLS, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and US college football and basketball.
+- **Lyrics:** time-synced lyrics for whatever plays in Spotify or Music. See them scroll in the island, follow the current line under the closed notch, or show them on your desktop in one of three styles, with the desktop tinted in the album's colors.
 - **Notes:** sticky notes in the notch. Write a quick note, color it, and pin important ones to the top. Saved on your Mac only.
 - **Drop zone:** drag files onto the notch to park them. Then copy or move them to Desktop, Downloads, iCloud Drive, Dropbox, Google Drive, OneDrive or any folder; share them; AirDrop them; copy them to the clipboard; or drag them out.
 - **Live activities while closed:** live score while your team plays, a heads-up before your next event, music artwork with animated bars, and a "Charging" pill when you plug in.
@@ -60,6 +61,7 @@ NotchIsland has no analytics and no accounts. It makes these network requests an
 | `api.open-meteo.com`, `geocoding-api.open-meteo.com` | Coordinates rounded to about 10 m, or the city name you search for | Weather and city search |
 | `site.api.espn.com` and ESPN image servers | League and team ID | Scores, schedules and team logos |
 | `i.scdn.co` | Nothing beyond the image request | Spotify artwork |
+| `lrclib.net` | Song title, artist, album and length | Lyrics |
 
 Your location never leaves your Mac except as weather coordinates. Calendar data and notes stay on your Mac. Notes are saved in `~/Library/Application Support/NotchIsland/notes.json`. Drop zone items are stored as file paths in the app's preferences and are only copied where you tell them to go.
 
@@ -110,6 +112,9 @@ The default build is ad-hoc signed. See [docs/RELEASING.md](docs/RELEASING.md) f
 | Events, new events and heads-up timing with EventKit | `Services/CalendarService.swift` |
 | Drop zone, destinations, copy and move | `Services/ShelfStore.swift` |
 | Sticky notes, saved as JSON | `Services/NotesStore.swift` |
+| Lyrics from LRCLIB, LRC parsing, current line | `Services/LyricsService.swift` |
+| Album colors for tinted backgrounds | `Services/ArtworkPalette.swift` |
+| Desktop lyrics window | `Core/DesktopLyricsController.swift`, `Views/DesktopLyricsView.swift` |
 | Battery from IOKit power-source notifications | `Services/BatteryService.swift` |
 | Animated notch outline | `Views/NotchShape.swift` |
 | Customize bar | `Views/CustomizeBar.swift` |

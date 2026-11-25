@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settingsWindow = SettingsWindowController()
     private var viewModel: NotchViewModel?
     private var controller: NotchController?
+    private var desktopLyrics: DesktopLyricsController?
     private var statusItem: NSStatusItem?
     private var cancellables = Set<AnyCancellable>()
 
@@ -15,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewModel.openSettings = { [weak self] in self?.showSettings() }
         self.viewModel = viewModel
         controller = NotchController(viewModel: viewModel, settings: settings)
+        desktopLyrics = DesktopLyricsController(viewModel: viewModel)
 
         setUpStatusItem()
 
@@ -28,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func screensChanged() {
         controller?.reposition()
+        desktopLyrics?.update()
     }
 
     @objc private func showSettings() {

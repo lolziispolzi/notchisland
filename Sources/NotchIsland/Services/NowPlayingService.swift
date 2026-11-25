@@ -118,6 +118,8 @@ final class NowPlayingService: ObservableObject {
     @Published private(set) var track: Track?
     @Published private(set) var isPlaying = false
     @Published private(set) var artwork: NSImage?
+    /// Strong colors from the artwork, for tinted backgrounds.
+    @Published private(set) var palette: [NSColor] = []
     @Published private(set) var shuffle = false
     @Published private(set) var repeating = false
 
@@ -286,6 +288,7 @@ final class NowPlayingService: ObservableObject {
         track = nil
         isPlaying = false
         artwork = nil
+        palette = []
         artworkKey = nil
         setPosition(0)
     }
@@ -301,6 +304,7 @@ final class NowPlayingService: ObservableObject {
             let image = await Self.fetchArtwork(for: player)
             guard self.artworkKey == key else { return }
             self.artwork = image
+            self.palette = image.map(ArtworkPalette.colors(from:)) ?? []
         }
     }
 

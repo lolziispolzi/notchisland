@@ -15,12 +15,14 @@ struct SettingsView: View {
                 .tabItem { Label("Weather", systemImage: "cloud.sun") }
             SportsSettings(settings: settings, sports: vm.sports)
                 .tabItem { Label("Sports", systemImage: "sportscourt") }
+            LyricsSettings(settings: settings, lyrics: vm.lyrics)
+                .tabItem { Label("Lyrics", systemImage: "quote.bubble") }
             CalendarSettings(settings: settings, calendar: vm.calendar)
                 .tabItem { Label("Calendar", systemImage: "calendar") }
             DropSettings(settings: settings, shelf: vm.shelf)
                 .tabItem { Label("Drop Zone", systemImage: "tray.and.arrow.down") }
         }
-        .frame(width: 540, height: 540)
+        .frame(width: 580, height: 560)
     }
 
     static var version: String {
@@ -317,6 +319,69 @@ private struct SportsSettings: View {
             sports.clearTeams()
             sports.loadTeams()
         }
+    }
+}
+
+// MARK: - Lyrics
+
+private struct LyricsSettings: View {
+    @ObservedObject var settings: AppSettings
+    @ObservedObject var lyrics: LyricsService
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Show lyrics for the playing song", isOn: $settings.lyricsEnabled)
+                Toggle("Show the current line under the notch", isOn: $settings.lyricsUnderNotch)
+                    .disabled(!settings.lyricsEnabled)
+            } footer: {
+                Text("Lyrics come from LRCLIB.net, a free community database. Not every song has lyrics, and some have them without timing.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Desktop") {
+                Picker("Lyrics on the desktop", selection: $settings.desktopLyricsStyle) {
+                    ForEach(DesktopLyricsStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                Toggle("Fill the desktop with the album's colors", isOn: $settings.desktopLyricsTint)
+                    .disabled(settings.desktopLyricsStyle == .off)
+                Picker("Text size", selection: $settings.desktopLyricsSize) {
+                    ForEach(LyricsTextSize.allCases) { size in
+                        Text(size.title).tag(size)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .disabled(settings.desktopLyricsStyle == .off)
+                Text("Desktop lyrics sit behind your windows, so you see them when the desktop is visible.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .disabled(!settings.lyricsEnabled)
+
+            Section {
+                LabeledContent("Timing") {
+                    HStack {
+                        Slider(value: $settings.lyricsOffset, in: -3...3, step: 0.25)
+                        Text(String(format: "%+.2fs", settings.lyricsOffset))
+                            .monospacedDigit()
+                            .frame(width: 52, alignment: .trailing)
+                    }
+                }
+                Button("Reset Timing") { settings.lyricsOffset = 0 }
+                    .disabled(settings.lyricsOffset == 0)
+            } header: {
+                Text("Sync")
+            } footer: {
+                Text("If lyrics run late, move the slider right. If they run early, move it left.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .disabled(!settings.lyricsEnabled)
+        }
+        .formStyle(.grouped)
     }
 }
 

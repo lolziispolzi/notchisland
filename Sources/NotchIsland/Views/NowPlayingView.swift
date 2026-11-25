@@ -2,6 +2,8 @@ import SwiftUI
 
 struct NowPlayingView: View {
     @ObservedObject var nowPlaying: NowPlayingService
+    var showsLyricsButton = false
+    var onShowLyrics: () -> Void = {}
 
     var body: some View {
         if let track = nowPlaying.track {
@@ -28,7 +30,7 @@ struct NowPlayingView: View {
                                     onSeek: { nowPlaying.seek(to: $0) })
                     }
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: showsLyricsButton ? 8 : 12) {
                         ControlButton(symbol: "shuffle", size: 11, isActive: nowPlaying.shuffle) {
                             nowPlaying.toggleShuffle()
                         }
@@ -39,6 +41,10 @@ struct NowPlayingView: View {
                         ControlButton(symbol: "forward.fill", size: 14) { nowPlaying.next() }
                         ControlButton(symbol: "repeat", size: 11, isActive: nowPlaying.repeating) {
                             nowPlaying.toggleRepeat()
+                        }
+                        if showsLyricsButton {
+                            ControlButton(symbol: "quote.bubble", size: 11, isActive: false, action: onShowLyrics)
+                                .help("Show lyrics")
                         }
                     }
                 }

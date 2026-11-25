@@ -116,7 +116,7 @@ final class NotchController {
             return false
         }
 
-        let inside = geometry.hoverRect(extraWidth: vm.closedExtraWidth).contains(point)
+        let inside = geometry.hoverRect(closedSize: vm.closedSize).contains(point)
         switch event.type {
         case .leftMouseDragged:
             if inside, settings.isVisible(.drop), Self.dragHasFiles() {
