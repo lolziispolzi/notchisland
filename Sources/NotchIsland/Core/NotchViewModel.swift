@@ -45,6 +45,10 @@ final class NotchViewModel: ObservableObject {
     /// Set by the app delegate.
     var openSettings: () -> Void = {}
 
+    /// Header button frames in island coordinates (top-left origin), reported by
+    /// `HeaderBar`. The controller hit-tests clicks against them.
+    var headerTargets: [String: CGRect] = [:]
+
     private var transientWork: DispatchWorkItem?
     private var cancellables = Set<AnyCancellable>()
 
@@ -136,6 +140,26 @@ final class NotchViewModel: ObservableObject {
         isEditing = false
         wantsKeyboard = false
         isDropTargeted = false
+    }
+
+    // MARK: - Header buttons
+
+    nonisolated static func headerAction(at point: CGPoint, in targets: [String: CGRect]) -> String? {
+        targets.first { $0.value.insetBy(dx: -2, dy: -3).contains(point) }?.key
+    }
+
+    /// Actions: "tab.<widget>", "customize", "settings".
+    func performHeaderAction(_ action: String) {
+        switch action {
+        case "customize":
+            isEditing.toggle()
+        case "settings":
+            openSettings()
+        default:
+            if action.hasPrefix("tab."), let widget = WidgetKind(rawValue: String(action.dropFirst(4))) {
+                tab = widget
+            }
+        }
     }
 
     private func ensureVisibleTab() {

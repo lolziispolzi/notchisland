@@ -66,23 +66,33 @@ final class NotchController {
 
         // Fires while another app is frontmost (the usual case).
         if let global = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] event in
-            MainActor.assumeIsolated { self?.handle(event) }
+            MainActor.assumeIsolated { _ = self?.handle(event) }
         }) {
             monitors.append(global)
         }
 
         // Fires while our own panel receives the events.
         if let local = NSEvent.addLocalMonitorForEvents(matching: mask, handler: { [weak self] event in
-            MainActor.assumeIsolated { self?.handle(event) }
-            return event
+            let consumed = MainActor.assumeIsolated { self?.handle(event) ?? false }
+            return consumed ? nil : event
         }) {
             monitors.append(local)
         }
     }
 
-    private func handle(_ event: NSEvent) {
+    /// Returns true when the event was fully handled and should not reach the window.
+    private func handle(_ event: NSEvent) -> Bool {
         let point = NSEvent.mouseLocation
         let geometry = vm.geometry
+
+        // Header buttons sit in the menu bar strip beside the notch, where macOS may
+        // deliver the click to the menu bar instead of the island. Hit-test them here,
+        // for clicks seen by either monitor, so they always work.
+        if vm.isOpen, event.type == .leftMouseDown,
+           let action = NotchViewModel.headerAction(at: islandPoint(point), in: vm.headerTargets) {
+            vm.performHeaderAction(action)
+            return true
+        }
 
         // Clicking into the Notes tab: take the keyboard before the click lands,
         // so the text editor gets focus and typing goes to the note.
@@ -94,7 +104,7 @@ final class NotchController {
             // Typing in the island: stay open until the form is done.
             if vm.wantsKeyboard {
                 cancelClose()
-                return
+                return false
             }
             // Keep it open while a button is held, so dragging a file out of the shelf works.
             let buttonHeld = event.type != .leftMouseUp && NSEvent.pressedMouseButtons != 0
@@ -103,7 +113,7 @@ final class NotchController {
             } else {
                 scheduleClose()
             }
-            return
+            return false
         }
 
         let inside = geometry.hoverRect(extraWidth: vm.closedExtraWidth).contains(point)
@@ -117,11 +127,17 @@ final class NotchController {
                 open()
             }
         case .mouseMoved:
-            guard settings.openOnHover else { return }
+            guard settings.openOnHover else { return false }
             if inside { scheduleOpen() } else { cancelOpen() }
         default:
             break
         }
+        return false
+    }
+
+    /// Screen point to island coordinates (origin at the panel's top-left, y down).
+    private func islandPoint(_ screenPoint: NSPoint) -> CGPoint {
+        CGPoint(x: screenPoint.x - panel.frame.minX, y: panel.frame.maxY - screenPoint.y)
     }
 
     private static func dragHasFiles() -> Bool {

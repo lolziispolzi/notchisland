@@ -18,6 +18,9 @@ struct NotchView: View {
 
     private let spring = Animation.spring(response: 0.38, dampingFraction: 0.8)
 
+    /// Coordinate space of the whole panel, used to report header button frames.
+    static let space = "island"
+
     var body: some View {
         ZStack(alignment: .top) {
             NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
@@ -35,6 +38,8 @@ struct NotchView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .ignoresSafeArea()
+        .coordinateSpace(name: NotchView.space)
         .onDrop(of: [UTType.fileURL], isTargeted: $vm.isDropTargeted) { providers in
             guard settings.isVisible(.drop) else { return false }
             vm.shelf.add(providers)
@@ -98,6 +103,7 @@ struct HeaderBar: View {
                     HeaderButton(symbol: widget.symbol, isSelected: vm.tab == widget, help: widget.title) {
                         vm.tab = widget
                     }
+                    .headerTarget("tab.\(widget.rawValue)")
                 }
             }
 
@@ -111,11 +117,37 @@ struct HeaderBar: View {
                 HeaderButton(symbol: "slider.horizontal.3", isSelected: vm.isEditing, help: "Customize") {
                     vm.isEditing.toggle()
                 }
+                .headerTarget("customize")
                 HeaderButton(symbol: "gearshape.fill", isSelected: false, help: "Settings") {
                     vm.openSettings()
                 }
+                .headerTarget("settings")
             }
         }
+        .onPreferenceChange(HeaderTargetsKey.self) { targets in
+            MainActor.assumeIsolated { vm.headerTargets = targets }
+        }
+    }
+}
+
+/// Collects header button frames so the controller can hit-test clicks.
+struct HeaderTargetsKey: PreferenceKey {
+    static let defaultValue: [String: CGRect] = [:]
+
+    static func reduce(value: inout [String: CGRect], nextValue: () -> [String: CGRect]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+extension View {
+    /// Reports this view's frame as a clickable header target.
+    func headerTarget(_ id: String) -> some View {
+        background(
+            GeometryReader { geometry in
+                Color.clear.preference(key: HeaderTargetsKey.self,
+                                       value: [id: geometry.frame(in: .named(NotchView.space))])
+            }
+        )
     }
 }
 

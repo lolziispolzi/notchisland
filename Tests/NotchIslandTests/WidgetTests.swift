@@ -323,3 +323,18 @@ final class NotesTests: XCTestCase {
         XCTAssertEqual(note.title, String(repeating: "a", count: 40) + "…")
     }
 }
+
+final class HeaderHitTestTests: XCTestCase {
+    func testHeaderActionHitTest() {
+        let targets: [String: CGRect] = [
+            "tab.weather": CGRect(x: 40, y: 5, width: 24, height: 22),
+            "settings": CGRect(x: 500, y: 5, width: 24, height: 22),
+        ]
+        XCTAssertEqual(NotchViewModel.headerAction(at: CGPoint(x: 50, y: 15), in: targets), "tab.weather")
+        // A little slack around each button.
+        XCTAssertEqual(NotchViewModel.headerAction(at: CGPoint(x: 39, y: 3), in: targets), "tab.weather")
+        XCTAssertEqual(NotchViewModel.headerAction(at: CGPoint(x: 510, y: 20), in: targets), "settings")
+        XCTAssertNil(NotchViewModel.headerAction(at: CGPoint(x: 200, y: 15), in: targets))
+        XCTAssertNil(NotchViewModel.headerAction(at: CGPoint(x: 50, y: 60), in: targets))
+    }
+}
