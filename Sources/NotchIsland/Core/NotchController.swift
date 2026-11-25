@@ -25,6 +25,8 @@ final class NotchController {
         hosting.frame = NSRect(origin: .zero, size: viewModel.geometry.panelFrame.size)
         hosting.autoresizingMask = [.width, .height]
         panel.contentView = hosting
+        // Set the frame again now that constraining is off, then show it.
+        panel.setFrame(viewModel.geometry.panelFrame, display: false)
         panel.orderFrontRegardless()
 
         startMouseMonitoring()

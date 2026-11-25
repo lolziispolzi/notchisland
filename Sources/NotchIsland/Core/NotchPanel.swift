@@ -23,6 +23,12 @@ final class NotchPanel: NSPanel {
     /// Only true while a text field in the island needs typing (e.g. adding an event).
     var allowsKey = false
 
+    /// macOS normally pushes windows down so they stay below the menu bar.
+    /// The island must sit at the very top of the screen, over the notch.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        frameRect
+    }
+
     // Otherwise never steal keyboard focus from the user's app.
     override var canBecomeKey: Bool { allowsKey }
     override var canBecomeMain: Bool { false }
