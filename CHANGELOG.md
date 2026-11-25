@@ -14,6 +14,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Notes widget: sticky notes with colors and pinning, saved locally.
 - Lyrics: synced lyrics from LRCLIB in the Music tab, the current line under the closed notch, and desktop lyrics in three styles with album-color backgrounds. Timing offset in Settings.
 - Lock-screen status readout in Settings, and a second way of placing windows above the lock screen.
+- `scripts/install-latest.sh` installs the newest CI build without the "Not Opened" warning.
 - `scripts/setup-local-signing.sh` so rebuilt copies keep their macOS permissions.
 - Stars lyrics style, edge glow that follows the notch, and an experimental lock-screen player with lyrics.
 - Header buttons beside the notch work even when macOS gives the click to the menu bar.

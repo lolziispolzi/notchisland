@@ -44,6 +44,15 @@ Hover over the notch and it expands into a panel with your music, weather, calen
 > **Unsigned builds:** if a release was built without a Developer ID certificate, macOS blocks it on first launch.
 > Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**. Only do this for builds you downloaded from this repository's Releases page.
 
+### Avoiding the "Not Opened" warning
+
+macOS blocks downloaded apps that aren't signed and notarized by Apple ("Apple could not verify…"), and asks again for every new download. Two ways to skip it:
+
+- **Build it yourself** with `./scripts/run-app.sh` (see [Build from source](#build-from-source)). Apps built on your Mac never get the warning, and with `./scripts/setup-local-signing.sh` they keep their permissions between updates.
+- **Install with the GitHub CLI**: `./scripts/install-latest.sh` downloads the newest build and installs it to Applications. Files downloaded this way aren't marked as coming from the internet, so they open without the warning.
+
+Releases that open with no warning for everyone need an Apple Developer ID; see [docs/RELEASING.md](docs/RELEASING.md).
+
 ## Permissions
 
 | Permission | When it is asked | Why |
