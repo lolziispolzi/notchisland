@@ -170,9 +170,8 @@ final class LockScreenController {
         if onLockScreen {
             if let space {
                 space.add(stage)
-                let stageResult = space.lastAddResult
                 space.add(player)
-                record("Locked with music playing. Placed windows \(stage.windowNumber) and \(player.windowNumber) above the lock screen: add results \(stageResult.map(String.init) ?? "-") and \(space.lastAddResult.map(String.init) ?? "-") (0 means success); \(space.setupSummary).")
+                record("Locked with music playing. Moved windows \(stage.windowNumber) and \(player.windowNumber) into the lock-screen space: \(space.setupSummary).")
             } else {
                 record("Locked with music playing, but this macOS has no SkyLight lock-screen functions. Tried the fallback window level only.")
             }

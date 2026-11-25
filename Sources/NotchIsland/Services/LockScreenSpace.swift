@@ -14,17 +14,20 @@ final class LockScreenSpace {
     private typealias MainConnectionID = @convention(c) () -> Int32
     private typealias SpaceCreate = @convention(c) (Int32, Int32, Int32) -> UInt64
     private typealias SpaceSetAbsoluteLevel = @convention(c) (Int32, UInt64, Int32) -> Int32
-    private typealias ShowSpaces = @convention(c) (Int32, CFArray) -> Int32
-    private typealias SpaceAddWindows = @convention(c) (Int32, UInt64, CFArray, Int32) -> Int32
+    // These two return nothing useful (their "results" read as leftover register values).
+    private typealias ShowSpaces = @convention(c) (Int32, CFArray) -> Void
+    private typealias SpaceAddWindows = @convention(c) (Int32, UInt64, CFArray, Int32) -> Void
 
     private let connection: Int32
     private let space: UInt64
     private let addWindows: SpaceAddWindows
 
-    /// Results of the setup calls, for the diagnostics in Settings. 0 means success.
+    /// Absolute level of the space. 400 is the level the system uses for
+    /// notification banners over the lock screen; 100 sits below the lock screen.
+    static let level: Int32 = 400
+
+    /// Results of the setup calls, for the diagnostics in Settings.
     let setupSummary: String
-    /// Result of the most recent `add`. 0 means success.
-    private(set) var lastAddResult: Int32?
 
     private init?() {
         guard let handle = dlopen("/System/Library/PrivateFrameworks/SkyLight.framework/Versions/A/SkyLight", RTLD_LAZY)
@@ -45,16 +48,15 @@ final class LockScreenSpace {
         connection = mainConnection()
         space = create(connection, 1, 0)
         guard space != 0 else { return nil }
-        // 100 sits above the lock screen.
-        let levelResult = setLevel(connection, space, 100)
-        let showResult = show(connection, [NSNumber(value: space)] as CFArray)
+        let levelResult = setLevel(connection, space, Self.level)
+        show(connection, [NSNumber(value: space)] as CFArray)
         addWindows = add
-        setupSummary = "connection \(connection), space \(space), level \(levelResult), show \(showResult)"
+        setupSummary = "space \(space) at level \(Self.level) (set-level result \(levelResult), 0 means success)"
     }
 
     /// Moves an on-screen window into the lock-screen space.
     func add(_ window: NSWindow) {
         guard window.windowNumber > 0 else { return }
-        lastAddResult = addWindows(connection, space, [NSNumber(value: window.windowNumber)] as CFArray, 7)
+        addWindows(connection, space, [NSNumber(value: window.windowNumber)] as CFArray, 7)
     }
 }
