@@ -423,10 +423,13 @@ final class PaletteTests: XCTestCase {
                                                 bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true,
                                                 isPlanar: false, colorSpaceName: .deviceRGB,
                                                 bytesPerRow: 0, bitsPerPixel: 0))
-        rep.setColor(.systemRed, atX: 0, y: 0)
-        rep.setColor(.systemRed, atX: 0, y: 1)
-        rep.setColor(.systemBlue, atX: 1, y: 0)
-        rep.setColor(.systemBlue, atX: 1, y: 1)
+        // Plain device RGB colors: dynamic system colors can't be written into a bitmap.
+        let red = NSColor(deviceRed: 0.9, green: 0.1, blue: 0.1, alpha: 1)
+        let blue = NSColor(deviceRed: 0.1, green: 0.2, blue: 0.9, alpha: 1)
+        rep.setColor(red, atX: 0, y: 0)
+        rep.setColor(red, atX: 0, y: 1)
+        rep.setColor(blue, atX: 1, y: 0)
+        rep.setColor(blue, atX: 1, y: 1)
         let image = NSImage(size: NSSize(width: 2, height: 2))
         image.addRepresentation(rep)
 
