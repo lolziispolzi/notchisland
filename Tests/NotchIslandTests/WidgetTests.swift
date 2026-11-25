@@ -215,7 +215,7 @@ final class LayoutTests: XCTestCase {
 
     func testNormalizedOrderAddsMissingAndDropsUnknown() {
         XCTAssertEqual(AppSettings.normalizedOrder(["sports", "bogus", "sports", "media"]),
-                       [.sports, .media, .weather, .calendar, .drop])
+                       [.sports, .media, .weather, .calendar, .drop, .notes])
         XCTAssertEqual(AppSettings.normalizedOrder([]), WidgetKind.allCases)
     }
 
@@ -273,5 +273,53 @@ final class PlaybackModesTests: XCTestCase {
         XCTAssertEqual(PlaybackUpdate.modes(from: "False\nTRUE")?.repeating, true)
         XCTAssertNil(PlaybackUpdate.modes(from: "true"))
         XCTAssertNil(PlaybackUpdate.modes(from: "yes\nno"))
+    }
+}
+
+@MainActor
+final class NotesTests: XCTestCase {
+    private func makeFolder() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    }
+
+    func testAddEditPinDeleteAndReload() {
+        let folder = makeFolder()
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        let store = NotesStore(directory: folder)
+        XCTAssertTrue(store.notes.isEmpty)
+
+        let first = store.add()
+        store.updateText(first.id, "Buy milk\nand eggs")
+        let second = store.add()
+        store.updateText(second.id, "Call mom")
+        XCTAssertEqual(store.selectedID, second.id)
+        XCTAssertEqual(store.notes.map(\.title), ["Call mom", "Buy milk"])
+
+        // Pinned notes go to the top even if older.
+        store.togglePin(first.id)
+        XCTAssertEqual(store.notes.first?.id, first.id)
+
+        store.setColor(second.id, .green)
+        store.saveNow()
+
+        let reloaded = NotesStore(directory: folder)
+        XCTAssertEqual(reloaded.notes.count, 2)
+        XCTAssertEqual(reloaded.notes.first?.text, "Buy milk\nand eggs")
+        XCTAssertTrue(reloaded.notes.first?.isPinned ?? false)
+        XCTAssertEqual(reloaded.note(second.id)?.color, .green)
+
+        reloaded.delete(first.id)
+        XCTAssertEqual(reloaded.notes.map(\.id), [second.id])
+        XCTAssertEqual(reloaded.selectedID, second.id)
+    }
+
+    func testTitle() {
+        var note = Note(id: UUID(), text: "", color: .yellow, isPinned: false, updatedAt: Date())
+        XCTAssertEqual(note.title, "New Note")
+        note.text = "\n   \n  Meeting notes  \nsecond line"
+        XCTAssertEqual(note.title, "Meeting notes")
+        note.text = String(repeating: "a", count: 50)
+        XCTAssertEqual(note.title, String(repeating: "a", count: 40) + "…")
     }
 }

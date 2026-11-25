@@ -40,6 +40,7 @@ final class NotchViewModel: ObservableObject {
     let weather: WeatherService
     let sports: SportsService
     let calendar: CalendarService
+    let notes = NotesStore()
 
     /// Set by the app delegate.
     var openSettings: () -> Void = {}
@@ -70,6 +71,7 @@ final class NotchViewModel: ObservableObject {
             weather.objectWillChange.eraseToAnyPublisher(),
             sports.objectWillChange.eraseToAnyPublisher(),
             calendar.objectWillChange.eraseToAnyPublisher(),
+            notes.objectWillChange.eraseToAnyPublisher(),
         ]
         Publishers.MergeMany(children)
             .sink { [weak self] in self?.objectWillChange.send() }

@@ -21,7 +21,7 @@ final class NotchController {
         panel = NotchPanel(frame: viewModel.geometry.panelFrame)
 
         let root = NotchView(vm: viewModel, settings: settings)
-        let hosting = NSHostingView(rootView: root)
+        let hosting = FirstMouseHostingView(rootView: root)
         hosting.frame = NSRect(origin: .zero, size: viewModel.geometry.panelFrame.size)
         hosting.autoresizingMask = [.width, .height]
         panel.contentView = hosting
@@ -84,6 +84,12 @@ final class NotchController {
         let point = NSEvent.mouseLocation
         let geometry = vm.geometry
 
+        // Clicking into the Notes tab: take the keyboard before the click lands,
+        // so the text editor gets focus and typing goes to the note.
+        if vm.isOpen, event.type == .leftMouseDown, event.window === panel, vm.tab == .notes {
+            setKeyboardEnabled(true)
+        }
+
         if vm.isOpen {
             // Typing in the island: stay open until the form is done.
             if vm.wantsKeyboard {
@@ -142,6 +148,7 @@ final class NotchController {
     private func close() {
         vm.isOpen = false
         vm.didClose()
+        setKeyboardEnabled(false)
         panel.ignoresMouseEvents = true
     }
 
@@ -183,4 +190,11 @@ final class NotchController {
         closeWork?.cancel()
         closeWork = nil
     }
+}
+
+/// The island's window is never the active window, so by default macOS swallows
+/// the first click on it (normally used to bring a window forward). Accepting the
+/// first click makes every button in the island work on a single click.
+final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }

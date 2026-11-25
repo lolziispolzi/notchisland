@@ -81,6 +81,7 @@ struct OpenView: View {
         case .calendar: CalendarView(vm: vm, settings: settings)
         case .sports: SportsView(vm: vm)
         case .drop: DropView(vm: vm)
+        case .notes: NotesView(vm: vm, notes: vm.notes)
         }
     }
 }
@@ -92,7 +93,7 @@ struct HeaderBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            HStack(spacing: 2) {
+            HStack(spacing: 1) {
                 ForEach(settings.visibleWidgets) { widget in
                     HeaderButton(symbol: widget.symbol, isSelected: vm.tab == widget, help: widget.title) {
                         vm.tab = widget
@@ -128,7 +129,7 @@ struct HeaderButton: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 11, weight: .semibold))
-                .frame(width: 26, height: 22)
+                .frame(width: 24, height: 22)
                 .background(Capsule().fill(Color.white.opacity(isSelected ? 0.18 : 0)))
                 .contentShape(Capsule())
         }

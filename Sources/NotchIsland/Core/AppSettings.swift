@@ -22,6 +22,7 @@ enum WidgetKind: String, CaseIterable, Identifiable, Codable {
     case calendar
     case sports
     case drop
+    case notes
 
     var id: String { rawValue }
 
@@ -32,6 +33,7 @@ enum WidgetKind: String, CaseIterable, Identifiable, Codable {
         case .calendar: "Calendar"
         case .sports: "Sports"
         case .drop: "Drop Zone"
+        case .notes: "Notes"
         }
     }
 
@@ -43,6 +45,7 @@ enum WidgetKind: String, CaseIterable, Identifiable, Codable {
         case .calendar: "Calendar"
         case .sports: "Sports"
         case .drop: "Drop"
+        case .notes: "Notes"
         }
     }
 
@@ -53,6 +56,7 @@ enum WidgetKind: String, CaseIterable, Identifiable, Codable {
         case .calendar: "calendar"
         case .sports: "sportscourt.fill"
         case .drop: "tray.and.arrow.down.fill"
+        case .notes: "note.text"
         }
     }
 }

@@ -19,6 +19,7 @@ Hover over the notch and it expands into a panel with your music, weather, calen
 - **Weather** for your current location or any city: current conditions, feels-like, humidity, wind and a 5-day forecast. Celsius or Fahrenheit.
 - **Calendar:** your upcoming events for the week. Add an event from the notch with a title, time, duration and alert. The alert is saved on the event, so Calendar reminds you on every device.
 - **Sports:** pick a league and your favorite team. See the live score, the latest result and the next games. NFL, NBA, WNBA, MLB, NHL, MLS, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and US college football and basketball.
+- **Notes:** sticky notes in the notch. Write a quick note, color it, and pin important ones to the top. Saved on your Mac only.
 - **Drop zone:** drag files onto the notch to park them. Then copy or move them to Desktop, Downloads, iCloud Drive, Dropbox, Google Drive, OneDrive or any folder; share them; AirDrop them; copy them to the clipboard; or drag them out.
 - **Live activities while closed:** live score while your team plays, a heads-up before your next event, music artwork with animated bars, and a "Charging" pill when you plug in.
 - **Customize bar:** press the sliders button in the island to show, hide and reorder widgets and change the island size, right in the notch.
@@ -60,7 +61,7 @@ NotchIsland has no analytics and no accounts. It makes these network requests an
 | `site.api.espn.com` and ESPN image servers | League and team ID | Scores, schedules and team logos |
 | `i.scdn.co` | Nothing beyond the image request | Spotify artwork |
 
-Your location never leaves your Mac except as weather coordinates. Calendar data stays on your Mac. Drop zone items are stored as file paths in the app's preferences and are only copied where you tell them to go.
+Your location never leaves your Mac except as weather coordinates. Calendar data and notes stay on your Mac. Notes are saved in `~/Library/Application Support/NotchIsland/notes.json`. Drop zone items are stored as file paths in the app's preferences and are only copied where you tell them to go.
 
 ## Build from source
 
@@ -108,6 +109,7 @@ The default build is ad-hoc signed. See [docs/RELEASING.md](docs/RELEASING.md) f
 | Scores and schedules from ESPN's public API | `Services/SportsService.swift` |
 | Events, new events and heads-up timing with EventKit | `Services/CalendarService.swift` |
 | Drop zone, destinations, copy and move | `Services/ShelfStore.swift` |
+| Sticky notes, saved as JSON | `Services/NotesStore.swift` |
 | Battery from IOKit power-source notifications | `Services/BatteryService.swift` |
 | Animated notch outline | `Views/NotchShape.swift` |
 | Customize bar | `Views/CustomizeBar.swift` |

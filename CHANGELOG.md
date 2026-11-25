@@ -5,7 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+- Buttons and tabs in the island needed the window to be active and ignored clicks.
+- The island showed below the menu bar instead of in the notch.
+- The app could start without running its setup in release builds.
+
 ### Added
+- Notes widget: sticky notes with colors and pinning, saved locally.
 - Weather widget: current location or a searched city, current conditions and 5-day forecast, °C or °F.
 - Calendar widget: upcoming events, add events with an alert from the notch, delete from the context menu.
 - Heads-up next to the notch before your next event.
