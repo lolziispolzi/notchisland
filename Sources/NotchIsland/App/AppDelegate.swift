@@ -21,7 +21,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         desktopLyrics = DesktopLyricsController(viewModel: viewModel)
         let glow = EdgeGlowController(viewModel: viewModel)
         edgeGlow = glow
-        lockScreen = LockScreenController(viewModel: viewModel, glow: glow)
+        let lock = LockScreenController(viewModel: viewModel, glow: glow)
+        lockScreen = lock
+        viewModel.previewLockScreen = { [weak lock] in lock?.preview() }
 
         setUpStatusItem()
 

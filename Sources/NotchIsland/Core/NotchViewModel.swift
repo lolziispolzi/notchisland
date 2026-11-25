@@ -33,6 +33,8 @@ final class NotchViewModel: ObservableObject {
     @Published var wantsKeyboard = false
     /// The Music tab shows lyrics instead of the full player.
     @Published var mediaShowsLyrics = false
+    /// What the lock screen shows; clicking the cover steps through the modes.
+    @Published var lockScreenMode: LockScreenMode = .compact
     @Published private(set) var transientActivity: ClosedActivity?
 
     let settings: AppSettings
@@ -49,6 +51,8 @@ final class NotchViewModel: ObservableObject {
 
     /// Set by the app delegate.
     var openSettings: () -> Void = {}
+    /// Set by the app delegate: shows the lock-screen layout on the desktop for a moment.
+    var previewLockScreen: () -> Void = {}
 
     /// Header button frames in island coordinates (top-left origin), reported by
     /// `HeaderBar`. The controller hit-tests clicks against them.

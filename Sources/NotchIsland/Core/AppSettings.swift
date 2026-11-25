@@ -339,7 +339,7 @@ final class AppSettings: ObservableObject {
             Key.desktopLyricsStyle: DesktopLyricsStyle.coverAndLyrics.rawValue,
             Key.desktopLyricsTint: true,
             Key.desktopLyricsSize: LyricsTextSize.medium.rawValue,
-            Key.lockScreenEnabled: false,
+            Key.lockScreenEnabled: true,
             Key.lockScreenLyricsStyle: DesktopLyricsStyle.stars.rawValue,
             Key.edgeGlowEnabled: false,
             Key.edgeGlowReactsToAudio: false,

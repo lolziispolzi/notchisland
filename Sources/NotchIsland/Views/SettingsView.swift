@@ -17,7 +17,7 @@ struct SettingsView: View {
                 .tabItem { Label("Sports", systemImage: "sportscourt") }
             LyricsSettings(settings: settings, lyrics: vm.lyrics)
                 .tabItem { Label("Lyrics", systemImage: "quote.bubble") }
-            LockScreenSettings(settings: settings, audio: vm.audio)
+            LockScreenSettings(settings: settings, audio: vm.audio, preview: vm.previewLockScreen)
                 .tabItem { Label("Lock Screen", systemImage: "lock.display") }
             CalendarSettings(settings: settings, calendar: vm.calendar)
                 .tabItem { Label("Calendar", systemImage: "calendar") }
@@ -392,18 +392,24 @@ private struct LyricsSettings: View {
 private struct LockScreenSettings: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var audio: AudioLevelMonitor
+    let preview: () -> Void
 
     var body: some View {
         Form {
             Section {
                 Toggle("Show the player on the lock screen", isOn: $settings.lockScreenEnabled)
                     .disabled(!LockScreenController.isSupported)
-                Picker("Lyrics on the lock screen", selection: $settings.lockScreenLyricsStyle) {
-                    ForEach(DesktopLyricsStyle.allCases.filter { $0 != .coverAndLyrics }) { style in
+                Picker("Lyrics style", selection: $settings.lockScreenLyricsStyle) {
+                    ForEach(DesktopLyricsStyle.allCases.filter { $0 != .coverAndLyrics && $0 != .off }) { style in
                         Text(style.title).tag(style)
                     }
                 }
                 .disabled(!settings.lockScreenEnabled || !settings.lyricsEnabled)
+                Button("Preview for 10 Seconds", action: preview)
+                    .disabled(!settings.lockScreenEnabled)
+                Text("While music plays: click the cover to enlarge it, click again for lyrics, and again to go back. A song must be playing for the preview.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             } header: {
                 Text("Lock screen")
             } footer: {

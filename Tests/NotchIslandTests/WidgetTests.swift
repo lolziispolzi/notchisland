@@ -507,3 +507,27 @@ final class StarsAndGlowTests: XCTestCase {
         XCTAssertEqual(AudioLevelOutput.normalized(rms: 0.0316), 0.4, accuracy: 0.01)
     }
 }
+
+@MainActor
+final class LockScreenTests: XCTestCase {
+    func testModeCycle() {
+        XCTAssertEqual(LockScreenMode.compact.next(hasLyrics: true), .cover)
+        XCTAssertEqual(LockScreenMode.cover.next(hasLyrics: true), .lyrics)
+        XCTAssertEqual(LockScreenMode.cover.next(hasLyrics: false), .compact)
+        XCTAssertEqual(LockScreenMode.lyrics.next(hasLyrics: true), .compact)
+    }
+
+    func testPlayerFramesStayOnScreenAndCentered() {
+        let screen = NSRect(x: 0, y: 0, width: 1512, height: 982)
+        for mode in [LockScreenMode.compact, .cover, .lyrics] {
+            let frame = LockScreenController.playerFrame(mode: mode, in: screen)
+            XCTAssertTrue(screen.contains(frame), "\(mode)")
+            XCTAssertEqual(frame.midX, screen.midX)
+            // Leave the top fifth for the macOS clock.
+            XCTAssertLessThan(frame.maxY, screen.maxY - screen.height * 0.2, "\(mode)")
+        }
+        let cover = LockScreenController.playerFrame(mode: .cover, in: screen)
+        let compact = LockScreenController.playerFrame(mode: .compact, in: screen)
+        XCTAssertGreaterThan(cover.height, compact.height)
+    }
+}

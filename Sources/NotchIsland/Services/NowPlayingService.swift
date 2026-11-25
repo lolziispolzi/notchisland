@@ -127,15 +127,14 @@ final class NowPlayingService: ObservableObject {
     private var positionDate = Date()
     private var artworkKey: String?
     private var observers: [NSObjectProtocol] = []
+    private var playerObservers: [DistributedObserver] = []
 
     init() {
-        let distributed = DistributedNotificationCenter.default()
         for player in MediaPlayer.allCases {
-            let token = distributed.addObserver(forName: player.notificationName, object: nil, queue: .main) { [weak self] note in
+            playerObservers.append(DistributedObserver(player.notificationName.rawValue) { [weak self] note in
                 let update = PlaybackUpdate.from(userInfo: note.userInfo ?? [:], player: player)
                 MainActor.assumeIsolated { self?.handle(update, from: player) }
-            }
-            observers.append(token)
+            })
         }
 
         let workspace = NSWorkspace.shared.notificationCenter
