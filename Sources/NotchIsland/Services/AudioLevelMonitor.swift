@@ -1,3 +1,4 @@
+import CoreGraphics
 import CoreMedia
 import Foundation
 import ScreenCaptureKit
@@ -11,7 +12,9 @@ final class AudioLevelMonitor: ObservableObject {
         case off
         case starting
         case running
-        /// Permission denied or capture failed.
+        /// Screen & System Audio Recording is not allowed yet.
+        case needsPermission
+        /// Allowed, but capture failed to start.
         case unavailable
     }
 
@@ -30,8 +33,14 @@ final class AudioLevelMonitor: ObservableObject {
         }
     }
 
+    /// Starts metering if the permission is already granted. Never shows a prompt:
+    /// starting capture without permission makes macOS ask again every time.
     func start() {
-        guard state == .off || state == .unavailable else { return }
+        guard state != .running, state != .starting else { return }
+        guard CGPreflightScreenCaptureAccess() else {
+            state = .needsPermission
+            return
+        }
         state = .starting
         Task {
             do {
@@ -69,8 +78,19 @@ final class AudioLevelMonitor: ObservableObject {
         let running = stream
         stream = nil
         level = 0
-        if state != .unavailable { state = .off }
+        if state == .running || state == .starting { state = .off }
         Task { try? await running?.stopCapture() }
+    }
+
+    /// Shows the macOS permission prompt once. Called only from a button in Settings.
+    /// macOS applies a new grant after the app is quit and reopened.
+    func requestPermission() {
+        if CGRequestScreenCaptureAccess() {
+            state = .off
+            start()
+        } else {
+            state = .needsPermission
+        }
     }
 
     private func ingest(_ value: Double) {

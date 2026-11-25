@@ -35,6 +35,8 @@ final class NotchViewModel: ObservableObject {
     @Published var mediaShowsLyrics = false
     /// What the lock screen shows; clicking the cover steps through the modes.
     @Published var lockScreenMode: LockScreenMode = .compact
+    /// What the lock-screen code last saw, shown in Settings to help find problems.
+    @Published var lockScreenStatus = LockScreenStatus()
     @Published private(set) var transientActivity: ClosedActivity?
 
     let settings: AppSettings

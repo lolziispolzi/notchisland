@@ -81,6 +81,14 @@ cd NotchIsland
 
 `run-app.sh` builds `NotchIsland.app` for your Mac and opens it. Use it to test everything.
 
+If you rebuild often, run this once first:
+
+```bash
+./scripts/setup-local-signing.sh
+```
+
+It creates a local signing certificate so every build has the same identity. Without it, macOS treats each rebuild as a new app and asks for permissions again.
+
 For quick UI work you can use `swift run`, or open `Package.swift` in Xcode and press **Run**. Without the app bundle, macOS cannot ask for location or calendar access, so those features show a notice instead.
 
 Run the tests:

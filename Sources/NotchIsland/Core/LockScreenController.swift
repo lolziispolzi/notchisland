@@ -1,6 +1,15 @@
 import AppKit
 import Combine
+import OSLog
 import SwiftUI
+
+/// Diagnostics for the lock screen, shown in Settings.
+struct LockScreenStatus: Equatable {
+    var lastLocked: Date?
+    var lastUnlocked: Date?
+    /// What happened the last time the screen locked.
+    var lastAttempt = "The screen hasn't been locked since NotchIsland started."
+}
 
 /// What the lock screen shows. Clicking the cover steps through the modes.
 enum LockScreenMode: Equatable {
@@ -38,6 +47,11 @@ final class LockScreenController {
     private var previewWork: DispatchWorkItem?
     private var isPreviewing = false
     private(set) var isLocked = false
+    private let log = Logger(subsystem: "io.github.notchisland", category: "lockscreen")
+
+    /// Above the lock screen without private APIs, for windows allowed before login.
+    /// Used together with `LockScreenSpace`; whichever works on this macOS wins.
+    private static let shieldingLevel = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) + 1)
 
     static let cardSize = CGSize(width: 340, height: 150)
     static let coverSize: CGFloat = 300
@@ -81,6 +95,12 @@ final class LockScreenController {
     private func setLocked(_ locked: Bool) {
         guard locked != isLocked else { return }
         isLocked = locked
+        log.info("Screen \(locked ? "locked" : "unlocked", privacy: .public)")
+        if locked {
+            vm.lockScreenStatus.lastLocked = Date()
+        } else {
+            vm.lockScreenStatus.lastUnlocked = Date()
+        }
         glow.isLocked = locked
         lockPoll?.invalidate()
         lockPoll = nil
@@ -116,7 +136,14 @@ final class LockScreenController {
     func update() {
         let settings = vm.settings
         let space = LockScreenSpace.shared
-        let onLockScreen = isLocked && settings.lockScreenEnabled && space != nil
+        let onLockScreen = isLocked && settings.lockScreenEnabled
+        if isLocked {
+            if !settings.lockScreenEnabled {
+                record("Locked, but \"Show the player on the lock screen\" is off.")
+            } else if vm.nowPlaying.track == nil {
+                record("Locked, but nothing was playing in Spotify or Music.")
+            }
+        }
         guard (onLockScreen || isPreviewing), vm.nowPlaying.track != nil else {
             stageWindow?.orderOut(nil)
             playerWindow?.orderOut(nil)
@@ -140,10 +167,22 @@ final class LockScreenController {
         player.setFrame(playerFrame, display: true, animate: false)
         player.orderFrontRegardless()
 
-        if onLockScreen, let space {
-            space.add(stage)
-            space.add(player)
+        if onLockScreen {
+            if let space {
+                space.add(stage)
+                let stageResult = space.lastAddResult
+                space.add(player)
+                record("Locked with music playing. Placed windows \(stage.windowNumber) and \(player.windowNumber) above the lock screen: add results \(stageResult.map(String.init) ?? "-") and \(space.lastAddResult.map(String.init) ?? "-") (0 means success); \(space.setupSummary).")
+            } else {
+                record("Locked with music playing, but this macOS has no SkyLight lock-screen functions. Tried the fallback window level only.")
+            }
         }
+    }
+
+    private func record(_ message: String) {
+        guard vm.lockScreenStatus.lastAttempt != message else { return }
+        vm.lockScreenStatus.lastAttempt = message
+        log.info("\(message, privacy: .public)")
     }
 
     /// Where the clickable player sits for each mode, in screen coordinates.
@@ -171,7 +210,7 @@ final class LockScreenController {
 
     private func makeWindow<Content: View>(frame: NSRect, clickThrough: Bool, content: Content) -> DesktopWindow {
         let window = DesktopWindow(contentRect: frame, styleMask: [.borderless], backing: .buffered, defer: false)
-        window.level = .screenSaver
+        window.level = Self.shieldingLevel
         // Not "all spaces": the window is moved into the lock-screen space instead.
         window.collectionBehavior = [.fullScreenAuxiliary, .ignoresCycle]
         window.canBecomeVisibleWithoutLogin = true

@@ -17,7 +17,7 @@ struct SettingsView: View {
                 .tabItem { Label("Sports", systemImage: "sportscourt") }
             LyricsSettings(settings: settings, lyrics: vm.lyrics)
                 .tabItem { Label("Lyrics", systemImage: "quote.bubble") }
-            LockScreenSettings(settings: settings, audio: vm.audio, preview: vm.previewLockScreen)
+            LockScreenSettings(settings: settings, audio: vm.audio, vm: vm, preview: vm.previewLockScreen)
                 .tabItem { Label("Lock Screen", systemImage: "lock.display") }
             CalendarSettings(settings: settings, calendar: vm.calendar)
                 .tabItem { Label("Calendar", systemImage: "calendar") }
@@ -392,6 +392,7 @@ private struct LyricsSettings: View {
 private struct LockScreenSettings: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var audio: AudioLevelMonitor
+    @ObservedObject var vm: NotchViewModel
     let preview: () -> Void
 
     var body: some View {
@@ -420,18 +421,35 @@ private struct LockScreenSettings: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Status") {
+                LabeledContent("Lock-screen functions", value: LockScreenController.isSupported ? "Found" : "Not found")
+                LabeledContent("Last lock",
+                               value: vm.lockScreenStatus.lastLocked?.formatted(date: .omitted, time: .standard) ?? "Not seen yet")
+                Text(vm.lockScreenStatus.lastAttempt)
+                    .font(.caption)
+                    .textSelection(.enabled)
+                Text("If the lock screen stays empty, lock and unlock once, then send a screenshot of this section.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section {
                 Toggle("Glow around the screen edge while music plays", isOn: $settings.edgeGlowEnabled)
                 Toggle("Pulse with the sound", isOn: $settings.edgeGlowReactsToAudio)
                     .disabled(!settings.edgeGlowEnabled)
-                if settings.edgeGlowReactsToAudio, audio.state == .unavailable {
-                    HStack {
-                        Text("Needs Screen & System Audio Recording permission.")
+                if settings.edgeGlowReactsToAudio, audio.state == .needsPermission || audio.state == .unavailable {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(audio.state == .needsPermission
+                             ? "Needs Screen & System Audio Recording permission. After allowing it, quit and reopen NotchIsland."
+                             : "Couldn't start audio metering. Quit and reopen NotchIsland.")
                             .font(.caption)
                             .foregroundStyle(.red)
-                        Button("Open Privacy Settings") {
-                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                                NSWorkspace.shared.open(url)
+                        HStack {
+                            Button("Allow…") { audio.requestPermission() }
+                            Button("Open Privacy Settings") {
+                                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                                    NSWorkspace.shared.open(url)
+                                }
                             }
                         }
                     }

@@ -21,6 +21,11 @@ final class LockScreenSpace {
     private let space: UInt64
     private let addWindows: SpaceAddWindows
 
+    /// Results of the setup calls, for the diagnostics in Settings. 0 means success.
+    let setupSummary: String
+    /// Result of the most recent `add`. 0 means success.
+    private(set) var lastAddResult: Int32?
+
     private init?() {
         guard let handle = dlopen("/System/Library/PrivateFrameworks/SkyLight.framework/Versions/A/SkyLight", RTLD_LAZY)
         else { return nil }
@@ -41,14 +46,15 @@ final class LockScreenSpace {
         space = create(connection, 1, 0)
         guard space != 0 else { return nil }
         // 100 sits above the lock screen.
-        _ = setLevel(connection, space, 100)
-        _ = show(connection, [NSNumber(value: space)] as CFArray)
+        let levelResult = setLevel(connection, space, 100)
+        let showResult = show(connection, [NSNumber(value: space)] as CFArray)
         addWindows = add
+        setupSummary = "connection \(connection), space \(space), level \(levelResult), show \(showResult)"
     }
 
     /// Moves an on-screen window into the lock-screen space.
     func add(_ window: NSWindow) {
         guard window.windowNumber > 0 else { return }
-        _ = addWindows(connection, space, [NSNumber(value: window.windowNumber)] as CFArray, 7)
+        lastAddResult = addWindows(connection, space, [NSNumber(value: window.windowNumber)] as CFArray, 7)
     }
 }
