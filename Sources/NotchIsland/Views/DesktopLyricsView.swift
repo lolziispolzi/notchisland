@@ -15,7 +15,8 @@ struct DesktopLyricsView: View {
 
     var body: some View {
         ZStack {
-            if allowsBackdrop, settings.desktopLyricsTint {
+            // The live wallpaper replaces the album-color backdrop when it's on.
+            if allowsBackdrop, settings.desktopLyricsTint, settings.liveWallpaperScene == .off {
                 AlbumBackdrop(colors: nowPlaying.palette)
                     .transition(.opacity)
             }

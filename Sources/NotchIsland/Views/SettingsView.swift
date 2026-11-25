@@ -17,6 +17,8 @@ struct SettingsView: View {
                 .tabItem { Label("Sports", systemImage: "sportscourt") }
             LyricsSettings(settings: settings, lyrics: vm.lyrics)
                 .tabItem { Label("Lyrics", systemImage: "quote.bubble") }
+            WallpaperSettings(settings: settings, audio: vm.audio, vm: vm)
+                .tabItem { Label("Wallpaper", systemImage: "sparkles.tv") }
             LockScreenSettings(settings: settings, audio: vm.audio, vm: vm, preview: vm.previewLockScreen)
                 .tabItem { Label("Lock Screen", systemImage: "lock.display") }
             CalendarSettings(settings: settings, calendar: vm.calendar)
@@ -24,7 +26,7 @@ struct SettingsView: View {
             DropSettings(settings: settings, shelf: vm.shelf)
                 .tabItem { Label("Drop Zone", systemImage: "tray.and.arrow.down") }
         }
-        .frame(width: 640, height: 580)
+        .frame(width: 720, height: 600)
     }
 
     static var version: String {
@@ -382,6 +384,72 @@ private struct LyricsSettings: View {
                     .foregroundStyle(.secondary)
             }
             .disabled(!settings.lyricsEnabled)
+        }
+        .formStyle(.grouped)
+    }
+}
+
+// MARK: - Live wallpaper
+
+private struct WallpaperSettings: View {
+    @ObservedObject var settings: AppSettings
+    @ObservedObject var audio: AudioLevelMonitor
+    @ObservedObject var vm: NotchViewModel
+
+    var body: some View {
+        Form {
+            Section {
+                Picker("Scene", selection: $settings.liveWallpaperScene) {
+                    ForEach(WallpaperScene.allCases) { scene in
+                        Text(scene.title).tag(scene)
+                    }
+                }
+                Picker("Show", selection: $settings.liveWallpaperWhen) {
+                    ForEach(WallpaperWhen.allCases) { when in
+                        Text(when.title).tag(when)
+                    }
+                }
+                .disabled(settings.liveWallpaperScene == .off)
+                Toggle("Use the album's colors", isOn: $settings.liveWallpaperAlbumColors)
+                    .disabled(settings.liveWallpaperScene == .off)
+                Toggle("Pause on battery power", isOn: $settings.liveWallpaperPausesOnBattery)
+                    .disabled(settings.liveWallpaperScene == .off)
+                if let error = vm.wallpaperError {
+                    Text(error).font(.caption).foregroundStyle(.red)
+                }
+            } footer: {
+                Text("The wallpaper sits behind your windows and desktop icons, and stops drawing when it's fully covered.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Move with the sound", isOn: $settings.liveWallpaperReactsToAudio)
+                    .disabled(settings.liveWallpaperScene == .off)
+                if settings.liveWallpaperReactsToAudio, audio.state == .needsPermission || audio.state == .unavailable {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(audio.state == .needsPermission
+                             ? "Needs Screen & System Audio Recording permission. After allowing it, quit and reopen NotchIsland."
+                             : "Couldn't start audio metering. Quit and reopen NotchIsland.")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                        HStack {
+                            Button("Allow…") { audio.requestPermission() }
+                            Button("Open Privacy Settings") {
+                                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            }
+                        }
+                    }
+                }
+            } header: {
+                Text("Beat")
+            } footer: {
+                Text("With sound, the scene speeds up with the music's energy and pulses on each beat. NotchIsland only measures loudness; it never records or saves audio. Without it, the scene pulses on each lyric line.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
     }

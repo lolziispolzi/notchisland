@@ -157,6 +157,56 @@ enum LyricsTextSize: String, CaseIterable, Identifiable {
     }
 }
 
+enum WallpaperScene: String, CaseIterable, Identifiable {
+    case off
+    case auroraLake
+    case contours
+    case nebula
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .off: "Off"
+        case .auroraLake: "Aurora Lake"
+        case .contours: "Contours"
+        case .nebula: "Nebula"
+        }
+    }
+
+    /// Index the shader switches on.
+    var shaderIndex: Int32 {
+        switch self {
+        case .off, .auroraLake: 0
+        case .contours: 1
+        case .nebula: 2
+        }
+    }
+
+    /// Colors used when album colors are off or there's no artwork (sRGB, 0…1).
+    var defaultColors: (SIMD4<Float>, SIMD4<Float>) {
+        switch self {
+        case .off, .auroraLake: (SIMD4(0.10, 0.90, 0.60, 1), SIMD4(0.55, 0.40, 1.00, 1))
+        case .contours: (SIMD4(0.85, 0.86, 0.95, 1), SIMD4(0.60, 0.45, 1.00, 1))
+        case .nebula: (SIMD4(0.90, 0.30, 0.60, 1), SIMD4(0.20, 0.45, 1.00, 1))
+        }
+    }
+}
+
+enum WallpaperWhen: String, CaseIterable, Identifiable {
+    case whilePlaying
+    case always
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .whilePlaying: "While music plays"
+        case .always: "Always"
+        }
+    }
+}
+
 /// User preferences, persisted in UserDefaults.
 @MainActor
 final class AppSettings: ObservableObject {
@@ -192,6 +242,11 @@ final class AppSettings: ObservableObject {
         static let lockScreenLyricsStyle = "lockScreenLyricsStyle"
         static let edgeGlowEnabled = "edgeGlowEnabled"
         static let edgeGlowReactsToAudio = "edgeGlowReactsToAudio"
+        static let liveWallpaperScene = "liveWallpaperScene"
+        static let liveWallpaperWhen = "liveWallpaperWhen"
+        static let liveWallpaperAlbumColors = "liveWallpaperAlbumColors"
+        static let liveWallpaperReactsToAudio = "liveWallpaperReactsToAudio"
+        static let liveWallpaperPausesOnBattery = "liveWallpaperPausesOnBattery"
     }
 
     private let defaults: UserDefaults
@@ -316,6 +371,26 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(edgeGlowReactsToAudio, forKey: Key.edgeGlowReactsToAudio) }
     }
 
+    // MARK: Live wallpaper
+
+    @Published var liveWallpaperScene: WallpaperScene {
+        didSet { defaults.set(liveWallpaperScene.rawValue, forKey: Key.liveWallpaperScene) }
+    }
+    @Published var liveWallpaperWhen: WallpaperWhen {
+        didSet { defaults.set(liveWallpaperWhen.rawValue, forKey: Key.liveWallpaperWhen) }
+    }
+    /// Tint the scene with the album's colors instead of its own.
+    @Published var liveWallpaperAlbumColors: Bool {
+        didSet { defaults.set(liveWallpaperAlbumColors, forKey: Key.liveWallpaperAlbumColors) }
+    }
+    /// Move with the actual sound. Needs Screen & System Audio Recording permission.
+    @Published var liveWallpaperReactsToAudio: Bool {
+        didSet { defaults.set(liveWallpaperReactsToAudio, forKey: Key.liveWallpaperReactsToAudio) }
+    }
+    @Published var liveWallpaperPausesOnBattery: Bool {
+        didSet { defaults.set(liveWallpaperPausesOnBattery, forKey: Key.liveWallpaperPausesOnBattery) }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaults.register(defaults: [
@@ -343,6 +418,11 @@ final class AppSettings: ObservableObject {
             Key.lockScreenLyricsStyle: DesktopLyricsStyle.stars.rawValue,
             Key.edgeGlowEnabled: false,
             Key.edgeGlowReactsToAudio: false,
+            Key.liveWallpaperScene: WallpaperScene.auroraLake.rawValue,
+            Key.liveWallpaperWhen: WallpaperWhen.whilePlaying.rawValue,
+            Key.liveWallpaperAlbumColors: false,
+            Key.liveWallpaperReactsToAudio: true,
+            Key.liveWallpaperPausesOnBattery: false,
         ])
 
         openOnHover = defaults.bool(forKey: Key.openOnHover)
@@ -381,6 +461,12 @@ final class AppSettings: ObservableObject {
         lockScreenLyricsStyle = DesktopLyricsStyle(rawValue: defaults.string(forKey: Key.lockScreenLyricsStyle) ?? "") ?? .stars
         edgeGlowEnabled = defaults.bool(forKey: Key.edgeGlowEnabled)
         edgeGlowReactsToAudio = defaults.bool(forKey: Key.edgeGlowReactsToAudio)
+
+        liveWallpaperScene = WallpaperScene(rawValue: defaults.string(forKey: Key.liveWallpaperScene) ?? "") ?? .auroraLake
+        liveWallpaperWhen = WallpaperWhen(rawValue: defaults.string(forKey: Key.liveWallpaperWhen) ?? "") ?? .whilePlaying
+        liveWallpaperAlbumColors = defaults.bool(forKey: Key.liveWallpaperAlbumColors)
+        liveWallpaperReactsToAudio = defaults.bool(forKey: Key.liveWallpaperReactsToAudio)
+        liveWallpaperPausesOnBattery = defaults.bool(forKey: Key.liveWallpaperPausesOnBattery)
 
         // Never start with every widget hidden.
         if visibleWidgets.isEmpty { hiddenWidgets = [] }

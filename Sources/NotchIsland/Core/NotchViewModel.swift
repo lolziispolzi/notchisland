@@ -37,6 +37,8 @@ final class NotchViewModel: ObservableObject {
     @Published var lockScreenMode: LockScreenMode = .compact
     /// What the lock-screen code last saw, shown in Settings to help find problems.
     @Published var lockScreenStatus = LockScreenStatus()
+    /// Set when the live wallpaper can't start (no Metal device or shader error).
+    @Published var wallpaperError: String?
     @Published private(set) var transientActivity: ClosedActivity?
 
     let settings: AppSettings

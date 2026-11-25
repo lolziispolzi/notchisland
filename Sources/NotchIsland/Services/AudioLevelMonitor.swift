@@ -24,6 +24,12 @@ final class AudioLevelMonitor: ObservableObject {
 
     private var stream: SCStream?
     private let output = AudioLevelOutput()
+    /// Features currently wanting audio (edge glow, wallpaper). Metering runs while any do.
+    private var users: Set<String> = []
+    /// Slow-moving average loudness, for beat detection.
+    private var average: Double = 0
+    /// When the last beat was detected (CFAbsoluteTime). Not published: read per frame.
+    private(set) var lastBeatTime: CFAbsoluteTime = 0
 
     init() {
         output.onLevel = { [weak self] value in
@@ -93,9 +99,34 @@ final class AudioLevelMonitor: ObservableObject {
         }
     }
 
+    /// Turns metering on while at least one feature needs it.
+    func use(_ user: String, _ needed: Bool) {
+        if needed {
+            users.insert(user)
+        } else {
+            users.remove(user)
+        }
+        if users.isEmpty {
+            stop()
+        } else {
+            start()
+        }
+    }
+
     private func ingest(_ value: Double) {
         // Rise fast, fall slowly, so beats read as pulses.
         level = value > level ? value : level * 0.82 + value * 0.18
+
+        // A beat is a jump well above the recent average, at most ~3.5 per second.
+        average = average * 0.95 + value * 0.05
+        let now = CFAbsoluteTimeGetCurrent()
+        if Self.isBeat(value: value, average: average, sinceLastBeat: now - lastBeatTime) {
+            lastBeatTime = now
+        }
+    }
+
+    nonisolated static func isBeat(value: Double, average: Double, sinceLastBeat: Double) -> Bool {
+        value > average + 0.08 && sinceLastBeat > 0.28
     }
 }
 

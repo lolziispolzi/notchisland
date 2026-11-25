@@ -20,6 +20,7 @@ Hover over the notch and it expands into a panel with your music, weather, calen
 - **Calendar:** your upcoming events for the week. Add an event from the notch with a title, time, duration and alert. The alert is saved on the event, so Calendar reminds you on every device.
 - **Sports:** pick a league and your favorite team. See the live score, the latest result and the next games. NFL, NBA, WNBA, MLB, NHL, MLS, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and US college football and basketball.
 - **Lyrics:** time-synced lyrics for whatever plays in Spotify or Music. See them scroll in the island, follow the current line under the closed notch, or show them on your desktop in one of three styles, with the desktop tinted in the album's colors.
+- **Live wallpaper:** a moving scene behind your windows that follows the music: Aurora Lake, Contours or Nebula. It pulses on each beat and speeds up with the song's energy, in its own colors or the album's. Drawn on the GPU at 30 fps, and paused when covered.
 - **Stars:** a lyrics style where each sung word lights a star in a constellation, with the current word glowing large underneath.
 - **Edge glow:** a line of light around the screen edge, following the notch, in the album's color. It flashes with each lyric line, or pulses with the actual sound if you allow audio metering.
 - **Lock screen (experimental, off by default):** a glass player and lyrics on the lock screen, so you can play, pause and skip before you sign in.
@@ -136,6 +137,7 @@ The default build is ad-hoc signed. See [docs/RELEASING.md](docs/RELEASING.md) f
 | Lyrics from LRCLIB, LRC parsing, current line | `Services/LyricsService.swift` |
 | Album colors for tinted backgrounds | `Services/ArtworkPalette.swift` |
 | Desktop lyrics window | `Core/DesktopLyricsController.swift`, `Views/DesktopLyricsView.swift` |
+| Live wallpaper: window, Metal renderer and shader | `Core/LiveWallpaperController.swift`, `Services/WallpaperRenderer.swift` |
 | Battery from IOKit power-source notifications | `Services/BatteryService.swift` |
 | Animated notch outline | `Views/NotchShape.swift` |
 | Customize bar | `Views/CustomizeBar.swift` |

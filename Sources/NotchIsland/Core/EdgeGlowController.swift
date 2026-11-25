@@ -44,11 +44,7 @@ final class EdgeGlowController {
             window?.orderOut(nil)
         }
 
-        if settings.edgeGlowReactsToAudio, showOnDesktop || showOnLockScreen {
-            vm.audio.start()
-        } else {
-            vm.audio.stop()
-        }
+        vm.audio.use("glow", settings.edgeGlowReactsToAudio && (showOnDesktop || showOnLockScreen))
     }
 
     private func makeWindow() -> DesktopWindow {

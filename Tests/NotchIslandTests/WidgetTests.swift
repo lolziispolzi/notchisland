@@ -1,3 +1,4 @@
+import Metal
 import SwiftUI
 import XCTest
 @testable import NotchIsland
@@ -529,5 +530,44 @@ final class LockScreenTests: XCTestCase {
         let cover = LockScreenController.playerFrame(mode: .cover, in: screen)
         let compact = LockScreenController.playerFrame(mode: .compact, in: screen)
         XCTAssertGreaterThan(cover.height, compact.height)
+    }
+}
+
+final class LiveWallpaperTests: XCTestCase {
+    func testUniformLayoutMatchesShader() {
+        // float2, 3 floats, int, float2 padding, two float4s: 64 bytes, colors at 32 and 48.
+        XCTAssertEqual(MemoryLayout<WallpaperUniforms>.stride, 64)
+        XCTAssertEqual(MemoryLayout<WallpaperUniforms>.offset(of: \.colorA), 32)
+        XCTAssertEqual(MemoryLayout<WallpaperUniforms>.offset(of: \.colorB), 48)
+    }
+
+    func testShaderCompiles() throws {
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            throw XCTSkip("No Metal device on this machine")
+        }
+        let library = try device.makeLibrary(source: WallpaperShader.source, options: nil)
+        XCTAssertNotNil(library.makeFunction(name: "wallpaper_vertex"))
+        XCTAssertNotNil(library.makeFunction(name: "wallpaper_fragment"))
+    }
+
+    func testSceneIndices() {
+        XCTAssertEqual(WallpaperScene.auroraLake.shaderIndex, 0)
+        XCTAssertEqual(WallpaperScene.contours.shaderIndex, 1)
+        XCTAssertEqual(WallpaperScene.nebula.shaderIndex, 2)
+    }
+
+    func testBeatDetection() {
+        XCTAssertTrue(AudioLevelMonitor.isBeat(value: 0.7, average: 0.4, sinceLastBeat: 1))
+        XCTAssertFalse(AudioLevelMonitor.isBeat(value: 0.45, average: 0.4, sinceLastBeat: 1))
+        XCTAssertFalse(AudioLevelMonitor.isBeat(value: 0.7, average: 0.4, sinceLastBeat: 0.1))
+    }
+
+    @MainActor
+    func testAlbumColorsAreBright() throws {
+        let dark = NSColor(srgbRed: 0.2, green: 0.05, blue: 0.05, alpha: 1)
+        let (first, second) = try XCTUnwrap(LiveWallpaperController.albumColors([dark]))
+        XCTAssertGreaterThan(first.x, 0.8)
+        XCTAssertEqual(first, second)
+        XCTAssertNil(LiveWallpaperController.albumColors([]))
     }
 }
