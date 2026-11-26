@@ -588,7 +588,7 @@ final class WallpaperTests: XCTestCase {
     }
 
     func testParseResponseSkipsThinkingAndSanitizes() throws {
-        let recipe = #"{"name":"Peach Mist","theme":"light","style":"spiral","background":["#fff4ec","nope"],"colors":["#ffd3b6"],"description":"Soft."}"#
+        let recipe = ##"{"name":"Peach Mist","theme":"light","style":"spiral","background":["#fff4ec","nope"],"colors":["#ffd3b6"],"description":"Soft."}"##
         let response: [String: Any] = [
             "stop_reason": "end_turn",
             "content": [["type": "thinking", "thinking": ""], ["type": "text", "text": recipe]],
