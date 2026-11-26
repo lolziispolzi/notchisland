@@ -39,6 +39,9 @@ final class NotchViewModel: ObservableObject {
     @Published var lockScreenStatus = LockScreenStatus()
 
     @Published private(set) var transientActivity: ClosedActivity?
+    /// The pointer is in the menu bar beside the notch: closed activities step aside
+    /// so the app's menus there can be seen and clicked.
+    @Published var pointerInMenuBar = false
 
     let settings: AppSettings
     let nowPlaying = NowPlayingService()
@@ -105,6 +108,7 @@ final class NotchViewModel: ObservableObject {
     }
 
     var closedActivity: ClosedActivity {
+        if pointerInMenuBar { return .none }
         if let transientActivity { return transientActivity }
         guard settings.showLiveActivities else { return .none }
         if settings.isVisible(.sports), sports.snapshot?.featured?.state == .live {

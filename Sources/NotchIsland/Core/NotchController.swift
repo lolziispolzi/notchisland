@@ -28,6 +28,7 @@ final class NotchController {
         // Set the frame again now that constraining is off, then show it.
         panel.setFrame(viewModel.geometry.panelFrame, display: false)
         panel.orderFrontRegardless()
+        placeAboveFullScreenApps()
 
         startMouseMonitoring()
 
@@ -57,6 +58,16 @@ final class NotchController {
         guard let geometry = NotchGeometry.current(for: settings.displayChoice) else { return }
         vm.geometry = geometry
         panel.setFrame(geometry.panelFrame, display: true)
+        placeAboveFullScreenApps()
+    }
+
+    /// In a full-screen app, macOS slides its own menu bar over the top of the screen,
+    /// which hid the island's header. A SkyLight space at level 100 sits above
+    /// full-screen apps and that menu bar, and below the lock screen, so the island
+    /// never shows your widgets before you sign in.
+    private func placeAboveFullScreenApps() {
+        guard settings.islandAboveFullScreen, let space = SkyLightSpace.aboveFullScreen else { return }
+        space.add(panel)
     }
 
     // MARK: - Mouse
@@ -116,7 +127,9 @@ final class NotchController {
             return false
         }
 
-        let inside = geometry.hoverRect(closedSize: vm.closedSize).contains(point)
+        let inMenuBar = geometry.isInMenuBarBesideNotch(point)
+        if vm.pointerInMenuBar != inMenuBar { vm.pointerInMenuBar = inMenuBar }
+        let inside = geometry.openTriggerRect.contains(point)
         switch event.type {
         case .leftMouseDragged:
             if inside, settings.isVisible(.drop), Self.dragHasFiles() {

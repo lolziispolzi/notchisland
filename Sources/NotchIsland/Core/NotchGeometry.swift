@@ -43,6 +43,19 @@ struct NotchGeometry: Equatable {
                       height: size.height + 8)
     }
 
+    /// Hovering here opens the island: the notch itself, plus a few points of slack.
+    /// It never grows with live activities, so reaching for a menu next to the notch
+    /// doesn't open the island.
+    var openTriggerRect: NSRect {
+        notchRect.insetBy(dx: -4, dy: 0).union(
+            NSRect(x: notchRect.minX - 4, y: notchRect.maxY - 1, width: notchRect.width + 8, height: 3))
+    }
+
+    /// True when the pointer is in the menu-bar strip beside the notch, where app menus are.
+    func isInMenuBarBesideNotch(_ point: NSPoint) -> Bool {
+        point.y >= notchRect.minY && !openTriggerRect.contains(point)
+    }
+
     /// Mouse leaving this area closes the island.
     func openRect(size: CGSize) -> NSRect {
         NSRect(x: notchRect.midX - size.width / 2 - Self.maxTopRadius,

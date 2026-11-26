@@ -30,7 +30,7 @@ enum LockScreenMode: Equatable {
 }
 
 /// While the screen is locked and music plays, shows the player, cover and lyrics
-/// above the lock screen, using a private macOS API (see `LockScreenSpace`).
+/// above the lock screen, using a private macOS API (see `SkyLightSpace`).
 ///
 /// Two windows: a full-screen one that never takes clicks (background color, lyrics,
 /// glow), and a small clickable one for the cover and the player card. Keeping the
@@ -50,7 +50,7 @@ final class LockScreenController {
     private let log = Logger(subsystem: "io.github.notchisland", category: "lockscreen")
 
     /// Above the lock screen without private APIs, for windows allowed before login.
-    /// Used together with `LockScreenSpace`; whichever works on this macOS wins.
+    /// Used together with `SkyLightSpace.lockScreen`; whichever works on this macOS wins.
     private static let shieldingLevel = NSWindow.Level(rawValue: Int(CGShieldingWindowLevel()) + 1)
 
     static let cardSize = CGSize(width: 340, height: 150)
@@ -58,7 +58,7 @@ final class LockScreenController {
     static let coverSpacing: CGFloat = 16
 
     /// False when the private API is missing on this macOS version.
-    static var isSupported: Bool { LockScreenSpace.shared != nil }
+    static var isSupported: Bool { SkyLightSpace.lockScreen != nil }
 
     init(viewModel: NotchViewModel, glow: EdgeGlowController) {
         vm = viewModel
@@ -135,7 +135,7 @@ final class LockScreenController {
 
     func update() {
         let settings = vm.settings
-        let space = LockScreenSpace.shared
+        let space = SkyLightSpace.lockScreen
         let onLockScreen = isLocked && settings.lockScreenEnabled
         if isLocked {
             if !settings.lockScreenEnabled {

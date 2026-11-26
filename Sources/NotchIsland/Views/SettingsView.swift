@@ -62,6 +62,11 @@ private struct GeneralSettings: View {
                 }
                 Toggle("Show menu bar icon", isOn: $settings.showMenuBarIcon)
                 Toggle("Glossy island", isOn: $settings.glossyIsland)
+                Toggle("Show the island over full-screen apps", isOn: $settings.islandAboveFullScreen)
+                    .disabled(SkyLightSpace.aboveFullScreen == nil)
+                Text("Uses the same private macOS interface as the lock-screen player. Turning it off takes effect after you quit and reopen NotchIsland.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Behavior") {

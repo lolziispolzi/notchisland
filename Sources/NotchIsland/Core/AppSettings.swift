@@ -170,6 +170,7 @@ final class AppSettings: ObservableObject {
         static let showBattery = "showBattery"
         static let showMenuBarIcon = "showMenuBarIcon"
         static let glossyIsland = "glossyIsland"
+        static let islandAboveFullScreen = "islandAboveFullScreen"
         static let displayChoice = "displayChoice"
         static let islandSize = "islandSize"
         static let widgetOrder = "widgetOrder"
@@ -220,6 +221,10 @@ final class AppSettings: ObservableObject {
     /// Glass-like sheen and rim on the open island.
     @Published var glossyIsland: Bool {
         didSet { defaults.set(glossyIsland, forKey: Key.glossyIsland) }
+    }
+    /// Keep the island above full-screen apps and their menu bar.
+    @Published var islandAboveFullScreen: Bool {
+        didSet { defaults.set(islandAboveFullScreen, forKey: Key.islandAboveFullScreen) }
     }
     @Published var displayChoice: DisplayChoice {
         didSet { defaults.set(displayChoice.rawValue, forKey: Key.displayChoice) }
@@ -331,6 +336,7 @@ final class AppSettings: ObservableObject {
             Key.showBattery: true,
             Key.showMenuBarIcon: true,
             Key.glossyIsland: true,
+            Key.islandAboveFullScreen: true,
             Key.displayChoice: DisplayChoice.notchScreen.rawValue,
             Key.islandSize: IslandSize.compact.rawValue,
             Key.temperatureUnit: TemperatureUnit.localeDefault.rawValue,
@@ -358,6 +364,7 @@ final class AppSettings: ObservableObject {
         showBattery = defaults.bool(forKey: Key.showBattery)
         showMenuBarIcon = defaults.bool(forKey: Key.showMenuBarIcon)
         glossyIsland = defaults.bool(forKey: Key.glossyIsland)
+        islandAboveFullScreen = defaults.bool(forKey: Key.islandAboveFullScreen)
         displayChoice = DisplayChoice(rawValue: defaults.string(forKey: Key.displayChoice) ?? "") ?? .notchScreen
 
         islandSize = IslandSize(rawValue: defaults.string(forKey: Key.islandSize) ?? "") ?? .compact

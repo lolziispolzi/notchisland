@@ -38,6 +38,18 @@ final class NotchGeometryTests: XCTestCase {
         XCTAssertEqual(g.hoverRect(closedSize: taller).minY, g.hoverRect().minY - 24)
     }
 
+    func testOpenTriggerIsJustTheNotch() {
+        let g = notched()
+        let trigger = g.openTriggerRect
+        XCTAssertTrue(trigger.contains(NSPoint(x: g.notchRect.midX, y: frame.maxY - 1)))
+        XCTAssertTrue(trigger.contains(NSPoint(x: g.notchRect.minX - 2, y: frame.maxY - 10)))
+        // A menu title just left of the notch must not open the island.
+        XCTAssertFalse(trigger.contains(NSPoint(x: g.notchRect.minX - 20, y: frame.maxY - 10)))
+        XCTAssertTrue(g.isInMenuBarBesideNotch(NSPoint(x: g.notchRect.minX - 20, y: frame.maxY - 10)))
+        XCTAssertFalse(g.isInMenuBarBesideNotch(NSPoint(x: g.notchRect.midX, y: frame.maxY - 10)))
+        XCTAssertFalse(g.isInMenuBarBesideNotch(NSPoint(x: 100, y: frame.maxY - 200)))
+    }
+
     func testOpenRectContainsHoverRect() {
         let g = notched()
         XCTAssertTrue(g.openRect(size: IslandSize.compact.openSize).contains(g.hoverRect().insetBy(dx: 0, dy: 1)))

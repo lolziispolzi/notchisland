@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Fixed
+- The island's header was hidden under the menu bar in full-screen apps; the island now stays above full-screen apps.
+- Live activities beside the notch covered app menus. They now step aside while the pointer is in the menu bar, and only the notch itself opens the island.
 - Buttons and tabs in the island needed the window to be active and ignored clicks.
 - The island showed below the menu bar instead of in the notch.
 - The app could start without running its setup in release builds.

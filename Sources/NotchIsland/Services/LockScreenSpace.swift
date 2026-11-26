@@ -1,15 +1,18 @@
 import AppKit
 
-/// Puts windows above the lock screen.
+/// A window "space" that macOS draws above ordinary desktops and full-screen apps.
 ///
 /// macOS has no public API for this. Like other notch apps, this uses the private
-/// SkyLight framework: it creates a window "space" with a level above the lock
-/// screen and moves windows into it. The functions are looked up at run time, so if
-/// a macOS update removes them, `shared` is nil and the feature quietly turns off.
+/// SkyLight framework: it creates a space with an absolute level and moves windows
+/// into it. The functions are looked up at run time, so if a macOS update removes
+/// them, the spaces are nil and the features that use them quietly turn off.
 /// Function signatures follow the ones used by open-source window managers (yabai).
 @MainActor
-final class LockScreenSpace {
-    static let shared: LockScreenSpace? = LockScreenSpace()
+final class SkyLightSpace {
+    /// Above the lock screen (level 400): the lock-screen player.
+    static let lockScreen: SkyLightSpace? = SkyLightSpace(level: 400)
+    /// Above full-screen apps and their menu bar, below the lock screen (level 100): the island.
+    static let aboveFullScreen: SkyLightSpace? = SkyLightSpace(level: 100)
 
     private typealias MainConnectionID = @convention(c) () -> Int32
     private typealias SpaceCreate = @convention(c) (Int32, Int32, Int32) -> UInt64
@@ -22,14 +25,13 @@ final class LockScreenSpace {
     private let space: UInt64
     private let addWindows: SpaceAddWindows
 
-    /// Absolute level of the space. 400 is the level the system uses for
-    /// notification banners over the lock screen; 100 sits below the lock screen.
-    static let level: Int32 = 400
+    let level: Int32
 
     /// Results of the setup calls, for the diagnostics in Settings.
     let setupSummary: String
 
-    private init?() {
+    private init?(level: Int32) {
+        self.level = level
         guard let handle = dlopen("/System/Library/PrivateFrameworks/SkyLight.framework/Versions/A/SkyLight", RTLD_LAZY)
         else { return nil }
 
@@ -48,13 +50,13 @@ final class LockScreenSpace {
         connection = mainConnection()
         space = create(connection, 1, 0)
         guard space != 0 else { return nil }
-        let levelResult = setLevel(connection, space, Self.level)
+        let levelResult = setLevel(connection, space, level)
         show(connection, [NSNumber(value: space)] as CFArray)
         addWindows = add
-        setupSummary = "space \(space) at level \(Self.level) (set-level result \(levelResult), 0 means success)"
+        setupSummary = "space \(space) at level \(level) (set-level result \(levelResult), 0 means success)"
     }
 
-    /// Moves an on-screen window into the lock-screen space.
+    /// Moves an on-screen window into this space.
     func add(_ window: NSWindow) {
         guard window.windowNumber > 0 else { return }
         addWindows(connection, space, [NSNumber(value: window.windowNumber)] as CFArray, 7)
