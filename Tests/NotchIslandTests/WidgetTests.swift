@@ -1,4 +1,3 @@
-import CoreImage
 import SwiftUI
 import XCTest
 @testable import NotchIsland
@@ -554,23 +553,20 @@ final class WallpaperTests: XCTestCase {
         }
     }
 
-    func testGlassFinishKeepsSizeAndSoftensDetail() throws {
+    func testCatalogHasCategoriesAndCredits() throws {
         let root = try XCTUnwrap(WallpaperLibrary.findBuiltInRoot())
-        let input = try XCTUnwrap(CIImage(contentsOf: root.appendingPathComponent("thumbs/sky-ribbons.jpg")))
-        let output = GlassFinish.apply(to: input)
-        XCTAssertEqual(output.extent, input.extent)
-        let rendered = try XCTUnwrap(GlassFinish.context.createCGImage(output, from: output.extent))
-        XCTAssertEqual(rendered.width, Int(input.extent.width))
-        // Light wallpapers stay light, dark ones stay dark.
-        XCTAssertGreaterThan(GlassFinish.averageLuminance(of: output), 0.6)
-        let dark = try XCTUnwrap(CIImage(contentsOf: root.appendingPathComponent("thumbs/deep-ocean.jpg")))
-        XCTAssertLessThan(GlassFinish.averageLuminance(of: GlassFinish.apply(to: dark)), 0.4)
+        let items = WallpaperLibrary.loadCatalog(root: root)
+        XCTAssertEqual(items.filter { $0.category == .art }.count, 12)
+        XCTAssertEqual(items.filter { $0.category == .places }.count, 8)
+        XCTAssertEqual(items.filter { $0.category == .graphic }.count, 10)
+        XCTAssertTrue(items.allSatisfy { !($0.credit ?? "").isEmpty })
+        XCTAssertTrue(items.filter { $0.category != .graphic }.allSatisfy { $0.sourceURL != nil })
     }
 
     func testThemeDetection() throws {
         let root = try XCTUnwrap(WallpaperLibrary.findBuiltInRoot())
-        let light = try XCTUnwrap(WallpaperLibrary.makeThumbnail(root.appendingPathComponent("light/pearl.jpg")))
-        let dark = try XCTUnwrap(WallpaperLibrary.makeThumbnail(root.appendingPathComponent("dark/starfield.jpg")))
+        let light = try XCTUnwrap(WallpaperLibrary.makeThumbnail(root.appendingPathComponent("light/bauhaus.jpg")))
+        let dark = try XCTUnwrap(WallpaperLibrary.makeThumbnail(root.appendingPathComponent("dark/swiss-rings.jpg")))
         XCTAssertEqual(WallpaperLibrary.theme(of: light), .light)
         XCTAssertEqual(WallpaperLibrary.theme(of: dark), .dark)
     }
@@ -624,5 +620,52 @@ final class WallpaperTests: XCTestCase {
         XCTAssertNil(HexColor.parse("#12345"))
         XCTAssertNil(HexColor.parse("blue"))
         XCTAssertEqual(WallpaperPainter.stableHash("abc"), WallpaperPainter.stableHash("abc"))
+    }
+}
+
+final class AllCompetitionsTests: XCTestCase {
+    func testSoccerUsesAllCompetitionsSchedule() {
+        let urls = ESPN.scheduleURLs(for: .premierLeague, teamID: "359").map(\.absoluteString)
+        XCTAssertEqual(urls, [
+            "https://site.api.espn.com/apis/site/v2/sports/soccer/all/teams/359/schedule",
+            "https://site.api.espn.com/apis/site/v2/sports/soccer/all/teams/359/schedule?fixture=true",
+        ])
+        let nba = ESPN.scheduleURLs(for: .nba, teamID: "13").map(\.absoluteString)
+        XCTAssertEqual(nba.count, 2)
+        XCTAssertTrue(nba[1].hasSuffix("basketball/nba/teams/13/schedule?seasontype=3"))
+    }
+
+    func testCompetitionNameComesFromEvent() throws {
+        let json = """
+        {"events": [{"id": "9", "date": "2026-11-26T20:00Z",
+          "league": {"abbreviation": "UEFA Champions League", "slug": "uefa.champions"},
+          "competitions": [{"competitors": [
+            {"homeAway": "home", "team": {"id": "359", "displayName": "Arsenal", "abbreviation": "ARS"}},
+            {"homeAway": "away", "team": {"id": "86", "displayName": "Real Madrid", "abbreviation": "RMA"}}],
+            "status": {"type": {"state": "pre", "shortDetail": "Wed 3:00 PM"}}}]}]}
+        """
+        let game = try XCTUnwrap(ESPN.games(from: Data(json.utf8)).first)
+        XCTAssertEqual(game.competition, "UEFA Champions League")
+    }
+
+    func testTeamSearchRanksPrefixMatchesFirst() {
+        let teams = [
+            SavedTeam(id: "1", name: "Arsenal", abbreviation: "ARS", logoURL: nil, league: .premierLeague),
+            SavedTeam(id: "2", name: "Los Angeles Lakers", abbreviation: "LAL", logoURL: nil, league: .nba),
+            SavedTeam(id: "3", name: "Arsenal de Sarandí", abbreviation: "ARSA", logoURL: nil, league: nil),
+            SavedTeam(id: "4", name: "Real Madrid", abbreviation: "RMA", logoURL: nil, league: .laLiga),
+        ]
+        XCTAssertEqual(ESPN.search("arsenal", in: teams).map(\.id), ["1", "3"])
+        XCTAssertEqual(ESPN.search("lakers", in: teams).map(\.id), ["2"])
+        XCTAssertEqual(ESPN.search("lal", in: teams).map(\.id), ["2"])
+        XCTAssertEqual(ESPN.search("madrid", in: teams).map(\.id), ["4"])
+        XCTAssertTrue(ESPN.search("  ", in: teams).isEmpty)
+    }
+
+    func testSavedTeamsFromOlderVersionsStillDecode() throws {
+        let old = #"{"id":"13","name":"Los Angeles Lakers","abbreviation":"LAL","logoURL":null}"#
+        let team = try JSONDecoder().decode(SavedTeam.self, from: Data(old.utf8))
+        XCTAssertNil(team.league)
+        XCTAssertEqual(team.searchKey, "/13")
     }
 }

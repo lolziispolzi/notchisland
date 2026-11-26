@@ -1,212 +1,302 @@
 [
   {
-    "id": "morning-mist",
-    "name": "Morning Mist",
+    "id": "great-wave",
+    "name": "The Great Wave",
     "theme": "light",
-    "file": "light/morning-mist.jpg",
-    "thumb": "thumbs/morning-mist.jpg"
+    "category": "art",
+    "file": "light/great-wave.jpg",
+    "thumb": "thumbs/great-wave.jpg",
+    "credit": "Katsushika Hokusai, Under the Wave off Kanagawa (Kanagawa oki nami ura), also known as The Great Wave, from the series \"Thirty-Six Views of Mount Fuji (Fugaku sanj\u016brokkei)\" (1830/33). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/24645"
   },
   {
-    "id": "lilac-waves",
-    "name": "Lilac Waves",
+    "id": "red-fuji",
+    "name": "Red Fuji",
     "theme": "light",
-    "file": "light/lilac-waves.jpg",
-    "thumb": "thumbs/lilac-waves.jpg"
+    "category": "art",
+    "file": "light/red-fuji.jpg",
+    "thumb": "thumbs/red-fuji.jpg",
+    "credit": "Katsushika Hokusai, A Mild Breeze on a Fine Day (Gaifu kaisei), from the series \"Thirty-six Views of Mount Fuji (Fugaku sanjurokkei)\" (c. 1830/33). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/87005"
   },
   {
-    "id": "peach-dunes",
-    "name": "Peach Dunes",
+    "id": "poppy-field",
+    "name": "Poppy Field",
     "theme": "light",
-    "file": "light/peach-dunes.jpg",
-    "thumb": "thumbs/peach-dunes.jpg"
+    "category": "art",
+    "file": "light/poppy-field.jpg",
+    "thumb": "thumbs/poppy-field.jpg",
+    "credit": "Claude Monet, Poppy Field (Giverny) (1890\u201391). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/4783"
   },
   {
-    "id": "seafoam",
-    "name": "Seafoam",
+    "id": "wheat-stacks-snow",
+    "name": "Wheat Stacks, Snow",
     "theme": "light",
-    "file": "light/seafoam.jpg",
-    "thumb": "thumbs/seafoam.jpg"
+    "category": "art",
+    "file": "light/wheat-stacks-snow.jpg",
+    "thumb": "thumbs/wheat-stacks-snow.jpg",
+    "credit": "Claude Monet, Stacks of Wheat (Sunset, Snow Effect) (1890\u201391). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/81545"
   },
   {
-    "id": "sky-ribbons",
-    "name": "Sky Ribbons",
+    "id": "waterloo-bridge",
+    "name": "Waterloo Bridge",
     "theme": "light",
-    "file": "light/sky-ribbons.jpg",
-    "thumb": "thumbs/sky-ribbons.jpg"
+    "category": "art",
+    "file": "light/waterloo-bridge.jpg",
+    "thumb": "thumbs/waterloo-bridge.jpg",
+    "credit": "Claude Monet, Waterloo Bridge, Sunlight Effect (1903). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/20701"
   },
   {
-    "id": "paper-hills",
-    "name": "Paper Hills",
+    "id": "crane-over-wave",
+    "name": "Crane over the Wave",
     "theme": "light",
-    "file": "light/paper-hills.jpg",
-    "thumb": "thumbs/paper-hills.jpg"
+    "category": "art",
+    "file": "light/crane-over-wave.jpg",
+    "thumb": "thumbs/crane-over-wave.jpg",
+    "credit": "Utagawa Hiroshige, Crane flying over wave (n.d.). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/47667"
   },
   {
-    "id": "rose-quartz",
-    "name": "Rose Quartz",
+    "id": "sainte-adresse",
+    "name": "Beach at Sainte-Adresse",
     "theme": "light",
-    "file": "light/rose-quartz.jpg",
-    "thumb": "thumbs/rose-quartz.jpg"
+    "category": "art",
+    "file": "light/sainte-adresse.jpg",
+    "thumb": "thumbs/sainte-adresse.jpg",
+    "credit": "Claude Monet, The Beach at Sainte-Adresse (1867). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/14598"
   },
   {
-    "id": "glacier",
-    "name": "Glacier",
+    "id": "nocturne",
+    "name": "Nocturne in Blue and Gold",
+    "theme": "dark",
+    "category": "art",
+    "file": "dark/nocturne.jpg",
+    "thumb": "thumbs/nocturne.jpg",
+    "credit": "James McNeill Whistler, Nocturne: Blue and Gold\u2014Southampton Water (1872). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/56905"
+  },
+  {
+    "id": "vesuvius",
+    "name": "Eruption of Vesuvius",
+    "theme": "dark",
+    "category": "art",
+    "file": "dark/vesuvius.jpg",
+    "thumb": "thumbs/vesuvius.jpg",
+    "credit": "Pierre-Jacques Volaire, The Eruption of Vesuvius (1771). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/57996"
+  },
+  {
+    "id": "catskills-mist",
+    "name": "Mist Rising at Sunset",
+    "theme": "dark",
+    "category": "art",
+    "file": "dark/catskills-mist.jpg",
+    "thumb": "thumbs/catskills-mist.jpg",
+    "credit": "Sanford Robinson Gifford, Mist Rising at Sunset in the Catskills (c. 1861). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/71971"
+  },
+  {
+    "id": "inness-sunset",
+    "name": "Landscape, Sunset",
+    "theme": "dark",
+    "category": "art",
+    "file": "dark/inness-sunset.jpg",
+    "thumb": "thumbs/inness-sunset.jpg",
+    "credit": "George Inness, Landscape, Sunset (1887\u201389). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/64740"
+  },
+  {
+    "id": "water-lily-pond",
+    "name": "Water Lily Pond",
+    "theme": "dark",
+    "category": "art",
+    "file": "dark/water-lily-pond.jpg",
+    "thumb": "thumbs/water-lily-pond.jpg",
+    "credit": "Claude Monet, Water Lily Pond (1917\u201319). Art Institute of Chicago, CC0.",
+    "source": "https://www.artic.edu/artworks/97933"
+  },
+  {
+    "id": "sahara-dunes",
+    "name": "Sahara Dunes",
     "theme": "light",
-    "file": "light/glacier.jpg",
-    "thumb": "thumbs/glacier.jpg"
+    "category": "places",
+    "file": "light/sahara-dunes.jpg",
+    "thumb": "thumbs/sahara-dunes.jpg",
+    "credit": "NASA, Expedition 13 crew. Public domain.",
+    "source": "https://images.nasa.gov/details/iss013e65526"
   },
   {
-    "id": "citrus-fade",
-    "name": "Citrus Fade",
+    "id": "bahamas-reefs",
+    "name": "Bahamas Reefs",
     "theme": "light",
-    "file": "light/citrus-fade.jpg",
-    "thumb": "thumbs/citrus-fade.jpg"
+    "category": "places",
+    "file": "light/bahamas-reefs.jpg",
+    "thumb": "thumbs/bahamas-reefs.jpg",
+    "credit": "NASA, Expedition 64 crew. Public domain.",
+    "source": "https://images.nasa.gov/details/iss064e002482"
   },
   {
-    "id": "sand-arcs",
-    "name": "Sand Arcs",
+    "id": "iceland-cyclones",
+    "name": "Cyclones near Iceland",
     "theme": "light",
-    "file": "light/sand-arcs.jpg",
-    "thumb": "thumbs/sand-arcs.jpg"
+    "category": "places",
+    "file": "light/iceland-cyclones.jpg",
+    "thumb": "thumbs/iceland-cyclones.jpg",
+    "credit": "NASA Goddard. Public domain.",
+    "source": "https://images.nasa.gov/details/GSFC_20171208_Archive_e002167"
   },
   {
-    "id": "cotton-sky",
-    "name": "Cotton Sky",
+    "id": "teal-channels",
+    "name": "Teal Channels",
     "theme": "light",
-    "file": "light/cotton-sky.jpg",
-    "thumb": "thumbs/cotton-sky.jpg"
+    "category": "places",
+    "file": "light/teal-channels.jpg",
+    "thumb": "thumbs/teal-channels.jpg",
+    "credit": "NASA, Expedition 69 crew. Public domain.",
+    "source": "https://images.nasa.gov/details/iss069e060925"
   },
   {
-    "id": "lavender-haze",
-    "name": "Lavender Haze",
+    "id": "aurora-orbit",
+    "name": "Aurora from Orbit",
+    "theme": "dark",
+    "category": "places",
+    "file": "dark/aurora-orbit.jpg",
+    "thumb": "thumbs/aurora-orbit.jpg",
+    "credit": "NASA, Expedition 66 crew. Public domain.",
+    "source": "https://images.nasa.gov/details/iss066e146457"
+  },
+  {
+    "id": "orbital-sunrise",
+    "name": "Orbital Sunrise",
+    "theme": "dark",
+    "category": "places",
+    "file": "dark/orbital-sunrise.jpg",
+    "thumb": "thumbs/orbital-sunrise.jpg",
+    "credit": "NASA, Expedition 61 crew. Public domain.",
+    "source": "https://images.nasa.gov/details/iss061e123468"
+  },
+  {
+    "id": "city-lights",
+    "name": "City Lights",
+    "theme": "dark",
+    "category": "places",
+    "file": "dark/city-lights.jpg",
+    "thumb": "thumbs/city-lights.jpg",
+    "credit": "NASA, Expedition 35 crew. Public domain.",
+    "source": "https://images.nasa.gov/details/iss035e017286"
+  },
+  {
+    "id": "mystic-mountain",
+    "name": "Mystic Mountain",
+    "theme": "dark",
+    "category": "places",
+    "file": "dark/mystic-mountain.jpg",
+    "thumb": "thumbs/mystic-mountain.jpg",
+    "credit": "NASA, ESA and the Hubble 20th Anniversary Team (STScI). Public domain.",
+    "source": "https://images.nasa.gov/details/GSFC_20171208_Archive_e002076"
+  },
+  {
+    "id": "bauhaus",
+    "name": "Bauhaus",
     "theme": "light",
-    "file": "light/lavender-haze.jpg",
-    "thumb": "thumbs/lavender-haze.jpg"
+    "category": "graphic",
+    "file": "light/bauhaus.jpg",
+    "thumb": "thumbs/bauhaus.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   },
   {
-    "id": "mint-ribbons",
-    "name": "Mint Ribbons",
+    "id": "paper-cutouts",
+    "name": "Paper Cut-outs",
     "theme": "light",
-    "file": "light/mint-ribbons.jpg",
-    "thumb": "thumbs/mint-ribbons.jpg"
+    "category": "graphic",
+    "file": "light/paper-cutouts.jpg",
+    "thumb": "thumbs/paper-cutouts.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   },
   {
-    "id": "pearl",
-    "name": "Pearl",
+    "id": "desert-sun",
+    "name": "Desert Sun",
     "theme": "light",
-    "file": "light/pearl.jpg",
-    "thumb": "thumbs/pearl.jpg"
+    "category": "graphic",
+    "file": "light/desert-sun.jpg",
+    "thumb": "thumbs/desert-sun.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   },
   {
-    "id": "coral-bloom",
-    "name": "Coral Bloom",
+    "id": "seventies",
+    "name": "Seventies",
     "theme": "light",
-    "file": "light/coral-bloom.jpg",
-    "thumb": "thumbs/coral-bloom.jpg"
+    "category": "graphic",
+    "file": "light/seventies.jpg",
+    "thumb": "thumbs/seventies.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   },
   {
-    "id": "midnight-aurora",
-    "name": "Midnight Aurora",
+    "id": "night-mountains",
+    "name": "Night Mountains",
     "theme": "dark",
-    "file": "dark/midnight-aurora.jpg",
-    "thumb": "thumbs/midnight-aurora.jpg"
+    "category": "graphic",
+    "file": "dark/night-mountains.jpg",
+    "thumb": "thumbs/night-mountains.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   },
   {
-    "id": "deep-ocean",
-    "name": "Deep Ocean",
+    "id": "synth-sunset",
+    "name": "Synth Sunset",
     "theme": "dark",
-    "file": "dark/deep-ocean.jpg",
-    "thumb": "thumbs/deep-ocean.jpg"
+    "category": "graphic",
+    "file": "dark/synth-sunset.jpg",
+    "thumb": "thumbs/synth-sunset.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   },
   {
-    "id": "ember-dunes",
-    "name": "Ember Dunes",
+    "id": "bauhaus-night",
+    "name": "Bauhaus Night",
     "theme": "dark",
-    "file": "dark/ember-dunes.jpg",
-    "thumb": "thumbs/ember-dunes.jpg"
+    "category": "graphic",
+    "file": "dark/bauhaus-night.jpg",
+    "thumb": "thumbs/bauhaus-night.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   },
   {
-    "id": "violet-night",
-    "name": "Violet Night",
+    "id": "swiss-rings",
+    "name": "Swiss Rings",
     "theme": "dark",
-    "file": "dark/violet-night.jpg",
-    "thumb": "thumbs/violet-night.jpg"
+    "category": "graphic",
+    "file": "dark/swiss-rings.jpg",
+    "thumb": "thumbs/swiss-rings.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   },
   {
-    "id": "obsidian-ribbons",
-    "name": "Obsidian Ribbons",
+    "id": "deco-fans",
+    "name": "Deco Fans",
     "theme": "dark",
-    "file": "dark/obsidian-ribbons.jpg",
-    "thumb": "thumbs/obsidian-ribbons.jpg"
+    "category": "graphic",
+    "file": "dark/deco-fans.jpg",
+    "thumb": "thumbs/deco-fans.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   },
   {
-    "id": "forest-night",
-    "name": "Forest Night",
+    "id": "midnight-sea",
+    "name": "Midnight Sea",
     "theme": "dark",
-    "file": "dark/forest-night.jpg",
-    "thumb": "thumbs/forest-night.jpg"
-  },
-  {
-    "id": "neon-dusk",
-    "name": "Neon Dusk",
-    "theme": "dark",
-    "file": "dark/neon-dusk.jpg",
-    "thumb": "thumbs/neon-dusk.jpg"
-  },
-  {
-    "id": "graphite-arcs",
-    "name": "Graphite Arcs",
-    "theme": "dark",
-    "file": "dark/graphite-arcs.jpg",
-    "thumb": "thumbs/graphite-arcs.jpg"
-  },
-  {
-    "id": "indigo-waves",
-    "name": "Indigo Waves",
-    "theme": "dark",
-    "file": "dark/indigo-waves.jpg",
-    "thumb": "thumbs/indigo-waves.jpg"
-  },
-  {
-    "id": "cosmic-teal",
-    "name": "Cosmic Teal",
-    "theme": "dark",
-    "file": "dark/cosmic-teal.jpg",
-    "thumb": "thumbs/cosmic-teal.jpg"
-  },
-  {
-    "id": "night-dunes",
-    "name": "Night Dunes",
-    "theme": "dark",
-    "file": "dark/night-dunes.jpg",
-    "thumb": "thumbs/night-dunes.jpg"
-  },
-  {
-    "id": "black-cherry",
-    "name": "Black Cherry",
-    "theme": "dark",
-    "file": "dark/black-cherry.jpg",
-    "thumb": "thumbs/black-cherry.jpg"
-  },
-  {
-    "id": "starfield",
-    "name": "Starfield",
-    "theme": "dark",
-    "file": "dark/starfield.jpg",
-    "thumb": "thumbs/starfield.jpg"
-  },
-  {
-    "id": "moonlit-bay",
-    "name": "Moonlit Bay",
-    "theme": "dark",
-    "file": "dark/moonlit-bay.jpg",
-    "thumb": "thumbs/moonlit-bay.jpg"
-  },
-  {
-    "id": "copper-ribbons",
-    "name": "Copper Ribbons",
-    "theme": "dark",
-    "file": "dark/copper-ribbons.jpg",
-    "thumb": "thumbs/copper-ribbons.jpg"
+    "category": "graphic",
+    "file": "dark/midnight-sea.jpg",
+    "thumb": "thumbs/midnight-sea.jpg",
+    "credit": "Original design for NotchIsland. MIT License.",
+    "source": null
   }
 ]

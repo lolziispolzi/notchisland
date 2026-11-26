@@ -13,7 +13,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Added
 - Notes widget: sticky notes with colors and pinning, saved locally.
 - Lyrics: synced lyrics from LRCLIB in the Music tab, the current line under the closed notch, and desktop lyrics in three styles with album-color backgrounds. Timing offset in Settings.
-- Wallpaper library: 30 original wallpapers (15 light, 15 dark), your own images, and a Glassy finish for any of them. Sets the macOS desktop picture.
+- Wallpaper library: 30 wallpapers (public-domain wall art, NASA photos and original graphic designs, 15 light and 15 dark) and your own images. Sets the macOS desktop picture.
+- Glossy island finish.
+- Sports: search for a team across 21 leagues and follow all its games in every competition.
 - Design a wallpaper with Claude from a description (needs your Anthropic API key, stored in the keychain).
 - Lock-screen status readout in Settings, and a second way of placing windows above the lock screen.
 - `scripts/install-latest.sh` installs the newest CI build without the "Not Opened" warning.

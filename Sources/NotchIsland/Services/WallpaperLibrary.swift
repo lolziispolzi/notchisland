@@ -1,5 +1,4 @@
 import AppKit
-import CoreImage
 import ImageIO
 import UniformTypeIdentifiers
 
@@ -8,19 +7,19 @@ enum WallpaperTheme: String, Codable, CaseIterable {
     case dark
 }
 
-/// What the gallery shows: light wallpapers, dark wallpapers, or every wallpaper with a glass finish.
-enum WallpaperFinish: String, CaseIterable, Identifiable {
-    case light
-    case dark
-    case glassy
-
-    var id: String { rawValue }
+/// Groups in the gallery.
+enum WallpaperCategory: String, Codable, CaseIterable {
+    case mine
+    case art
+    case places
+    case graphic
 
     var title: String {
         switch self {
-        case .light: "Light"
-        case .dark: "Dark"
-        case .glassy: "Glassy"
+        case .mine: "Yours"
+        case .art: "Wall Art"
+        case .places: "Places"
+        case .graphic: "Graphic Designs"
         }
     }
 }
@@ -39,27 +38,32 @@ struct WallpaperItem: Identifiable, Hashable, Codable {
     /// Full-size image. Relative to the built-in folder for built-in items, absolute otherwise.
     var file: String
     var thumb: String
+    /// Nil for your own and Claude-designed wallpapers (older saved items have no category).
+    var category: WallpaperCategory?
+    /// Artist, title and license, shown in the gallery.
+    var credit: String?
+    /// Page about the original, for built-in art and photos.
+    var sourceURL: String?
 }
 
-/// The wallpaper library: 30 built-in wallpapers, images the user adds, and ones designed
-/// with Claude. Choosing one sets the real macOS desktop picture (optionally with a glass finish).
+/// The wallpaper library: 30 built-in wallpapers (public-domain art, NASA photos and original
+/// graphic designs), images the user adds, and ones designed with Claude. Choosing one sets the
+/// real macOS desktop picture.
 @MainActor
 final class WallpaperLibrary: ObservableObject {
     @Published private(set) var builtIn: [WallpaperItem] = []
     @Published private(set) var mine: [WallpaperItem] = []
-    @Published var finish: WallpaperFinish {
-        didSet { defaults.set(finish.rawValue, forKey: Key.finish) }
+    @Published var theme: WallpaperTheme {
+        didSet { defaults.set(theme.rawValue, forKey: Key.theme) }
     }
     @Published private(set) var currentID: String?
-    @Published private(set) var currentGlassy = false
     @Published private(set) var isWorking = false
     @Published private(set) var message: String?
     @Published private(set) var hasAPIKey = Keychain.read(WallpaperDesigner.keychainAccount) != nil
 
     private enum Key {
-        static let finish = "wallpaper.finish"
+        static let theme = "wallpaper.theme"
         static let currentID = "wallpaper.currentID"
-        static let currentGlassy = "wallpaper.currentGlassy"
     }
 
     private let defaults: UserDefaults
@@ -73,22 +77,25 @@ final class WallpaperLibrary: ObservableObject {
         self.storeRoot = storeRoot ?? FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("NotchIsland/Wallpapers", isDirectory: true)
-        finish = WallpaperFinish(rawValue: defaults.string(forKey: Key.finish) ?? "") ?? .light
+        theme = WallpaperTheme(rawValue: defaults.string(forKey: Key.theme) ?? "") ?? .light
         currentID = defaults.string(forKey: Key.currentID)
-        currentGlassy = defaults.bool(forKey: Key.currentGlassy)
         builtIn = Self.loadCatalog(root: builtInRoot)
         mine = loadMine()
     }
 
     // MARK: - Listing
 
-    var visibleItems: [WallpaperItem] {
-        let all = mine + builtIn
-        switch finish {
-        case .light: return all.filter { $0.theme == .light }
-        case .dark: return all.filter { $0.theme == .dark }
-        case .glassy: return all
+    /// The selected theme's wallpapers, grouped: yours first, then art, places and graphic designs.
+    var sections: [(category: WallpaperCategory, items: [WallpaperItem])] {
+        let all = (mine + builtIn).filter { $0.theme == theme }
+        return WallpaperCategory.allCases.compactMap { category in
+            let items = all.filter { ($0.category ?? .mine) == category }
+            return items.isEmpty ? nil : (category, items)
         }
+    }
+
+    var current: WallpaperItem? {
+        (mine + builtIn).first { $0.id == currentID }
     }
 
     func fileURL(_ item: WallpaperItem) -> URL? {
@@ -98,53 +105,28 @@ final class WallpaperLibrary: ObservableObject {
         return URL(fileURLWithPath: item.file)
     }
 
-    func thumbnail(for item: WallpaperItem, glassy: Bool) -> NSImage? {
-        let key = "\(item.id)|\(glassy)"
-        if let cached = thumbnailCache[key] { return cached }
+    func thumbnail(for item: WallpaperItem) -> NSImage? {
+        if let cached = thumbnailCache[item.id] { return cached }
         let url = item.source == .builtIn
             ? builtInRoot?.appendingPathComponent(item.thumb)
             : URL(fileURLWithPath: item.thumb)
-        guard let url, var image = CIImage(contentsOf: url) else { return nil }
-        if glassy { image = GlassFinish.apply(to: image) }
-        guard let cgImage = GlassFinish.context.createCGImage(image, from: image.extent) else { return nil }
-        let result = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-        thumbnailCache[key] = result
-        return result
+        guard let url, let image = NSImage(contentsOf: url) else { return nil }
+        thumbnailCache[item.id] = image
+        return image
     }
 
     // MARK: - Applying
 
     /// Sets the desktop picture on every screen.
-    func apply(_ item: WallpaperItem, glassy: Bool) {
-        guard !isWorking, let source = fileURL(item) else { return }
-        isWorking = true
-        message = nil
-        let renderedFolder = storeRoot.appendingPathComponent("Rendered", isDirectory: true)
-        Task {
-            let id = item.id
-            let result: URL?
-            if glassy {
-                result = await Task.detached(priority: .userInitiated) {
-                    try? WallpaperLibrary.renderGlass(source: source, id: id, folder: renderedFolder)
-                }.value
-            } else {
-                result = source
-            }
-            isWorking = false
-            guard let url = result else {
-                message = "Couldn't make the glass version of \(item.name)."
-                return
-            }
-            do {
-                try Self.setDesktopPicture(url)
-                currentID = item.id
-                currentGlassy = glassy
-                defaults.set(item.id, forKey: Key.currentID)
-                defaults.set(glassy, forKey: Key.currentGlassy)
-                message = "\(item.name)\(glassy ? " (glass)" : "") is now your wallpaper."
-            } catch {
-                message = "Couldn't set the wallpaper: \(error.localizedDescription)"
-            }
+    func apply(_ item: WallpaperItem) {
+        guard let url = fileURL(item) else { return }
+        do {
+            try Self.setDesktopPicture(url)
+            currentID = item.id
+            defaults.set(item.id, forKey: Key.currentID)
+            message = "\(item.name) is now your wallpaper."
+        } catch {
+            message = "Couldn't set the wallpaper: \(error.localizedDescription)"
         }
     }
 
@@ -156,23 +138,6 @@ final class WallpaperLibrary: ObservableObject {
         for screen in NSScreen.screens {
             try NSWorkspace.shared.setDesktopImageURL(url, for: screen, options: options)
         }
-    }
-
-    /// Writes the glass version once and reuses it. The file name changes with the source
-    /// so macOS doesn't keep showing an old cached picture.
-    nonisolated static func renderGlass(source: URL, id: String, folder: URL) throws -> URL {
-        let modified = (try? source.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)?
-            .timeIntervalSince1970 ?? 0
-        let target = folder.appendingPathComponent("\(id)-glass-\(Int(modified)).jpg")
-        if FileManager.default.fileExists(atPath: target.path) { return target }
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        guard let input = CIImage(contentsOf: source) else { throw CocoaError(.fileReadCorruptFile) }
-        let output = GlassFinish.apply(to: input)
-        guard let image = GlassFinish.context.createCGImage(output, from: output.extent) else {
-            throw CocoaError(.fileWriteUnknown)
-        }
-        try writeJPEG(image, to: target)
-        return target
     }
 
     // MARK: - Your own wallpapers
@@ -200,7 +165,7 @@ final class WallpaperLibrary: ObservableObject {
         }
         saveMine()
         message = added == 0 ? "Those files couldn't be added." : (added == 1 ? "Added 1 wallpaper." : "Added \(added) wallpapers.")
-        if added > 0, finish != .glassy, let first = mine.first { finish = first.theme == .dark ? .dark : .light }
+        if added > 0, let first = mine.first { theme = first.theme }
     }
 
     /// Removes your own wallpaper from the library and deletes NotchIsland's copy.
@@ -272,8 +237,8 @@ final class WallpaperLibrary: ObservableObject {
                 saveMine()
                 isWorking = false
                 message = "Made \"\(recipe.name)\": \(recipe.description)"
-                if finish != .glassy { finish = item.theme == .dark ? .dark : .light }
-                apply(item, glassy: finish == .glassy)
+                theme = item.theme
+                apply(item)
             } catch {
                 isWorking = false
                 message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
@@ -320,6 +285,9 @@ final class WallpaperLibrary: ObservableObject {
     nonisolated static func loadCatalog(root: URL?) -> [WallpaperItem] {
         struct Entry: Decodable {
             let id, name, theme, file, thumb: String
+            let category: String?
+            let credit: String?
+            let source: String?
         }
         guard let root,
               let data = try? Data(contentsOf: root.appendingPathComponent("catalog.json")),
@@ -327,7 +295,9 @@ final class WallpaperLibrary: ObservableObject {
         else { return [] }
         return entries.map {
             WallpaperItem(id: $0.id, name: $0.name, theme: WallpaperTheme(rawValue: $0.theme) ?? .light,
-                          source: .builtIn, file: $0.file, thumb: $0.thumb)
+                          source: .builtIn, file: $0.file, thumb: $0.thumb,
+                          category: WallpaperCategory(rawValue: $0.category ?? "") ?? .graphic,
+                          credit: $0.credit, sourceURL: $0.source)
         }
     }
 
@@ -342,7 +312,29 @@ final class WallpaperLibrary: ObservableObject {
     }
 
     nonisolated static func theme(of image: CGImage) -> WallpaperTheme {
-        GlassFinish.averageLuminance(of: CIImage(cgImage: image)) < 0.45 ? .dark : .light
+        averageLuminance(of: image) < 0.45 ? .dark : .light
+    }
+
+    /// Average brightness from 0 to 1, from an 8 x 8 downscale.
+    nonisolated static func averageLuminance(of image: CGImage) -> Double {
+        let side = 8
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        let drawn: Bool = pixels.withUnsafeMutableBytes { buffer in
+            guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+                  let context = CGContext(data: buffer.baseAddress, width: side, height: side,
+                                          bitsPerComponent: 8, bytesPerRow: side * 4, space: space,
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return false }
+            context.interpolationQuality = .medium
+            context.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
+            return true
+        }
+        guard drawn else { return 0.5 }
+        var total = 0.0
+        for index in stride(from: 0, to: pixels.count, by: 4) {
+            total += 0.2126 * Double(pixels[index]) + 0.7152 * Double(pixels[index + 1]) + 0.0722 * Double(pixels[index + 2])
+        }
+        return total / Double(side * side) / 255
     }
 
     nonisolated static func writeJPEG(_ image: CGImage, to url: URL, quality: Double = 0.9) throws {

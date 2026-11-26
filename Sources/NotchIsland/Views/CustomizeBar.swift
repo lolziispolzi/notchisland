@@ -24,9 +24,12 @@ struct CustomizeBar: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 210)
+                .frame(width: 180)
 
                 Toggle("Live activities", isOn: $settings.showLiveActivities)
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                Toggle("Glossy", isOn: $settings.glossyIsland)
                     .toggleStyle(.switch)
                     .controlSize(.mini)
 

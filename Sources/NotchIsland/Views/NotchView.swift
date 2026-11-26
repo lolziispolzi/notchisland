@@ -23,6 +23,16 @@ struct NotchView: View {
         ZStack(alignment: .top) {
             NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
                 .fill(Color.black)
+                .overlay {
+                    // Closed, the island stays pure black to match the camera notch.
+                    if vm.isOpen, settings.glossyIsland {
+                        IslandGloss(topRadius: topRadius,
+                                    bottomRadius: bottomRadius,
+                                    notchHeight: vm.geometry.notchRect.height,
+                                    tint: vm.nowPlaying.isPlaying ? vm.nowPlaying.accentColor : nil)
+                            .transition(.opacity)
+                    }
+                }
                 .frame(width: size.width + topRadius * 2, height: size.height)
 
             if vm.isOpen {
@@ -231,5 +241,53 @@ struct PillButtonStyle: ButtonStyle {
             .padding(.vertical, 5)
             .background(Capsule().fill(Color.white.opacity(configuration.isPressed ? 0.25 : 0.15)))
             .contentShape(Capsule())
+    }
+}
+
+/// Glossy finish for the open island: a soft sheen under the header row, a diagonal
+/// highlight, a bright lower rim and, while music plays, a faint reflection of the
+/// album's color. The strip beside the notch stays black so the island still grows
+/// out of the camera housing.
+struct IslandGloss: View {
+    let topRadius: CGFloat
+    let bottomRadius: CGFloat
+    let notchHeight: CGFloat
+    let tint: Color?
+
+    var body: some View {
+        GeometryReader { geometry in
+            let shape = NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
+            let headerEnd = min(0.4, (notchHeight + 4) / max(geometry.size.height, 1))
+            ZStack {
+                shape.fill(LinearGradient(stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .clear, location: headerEnd),
+                    .init(color: .white.opacity(0.09), location: headerEnd + 0.04),
+                    .init(color: .white.opacity(0.02), location: 0.55),
+                    .init(color: .clear, location: 0.7),
+                ], startPoint: .top, endPoint: .bottom))
+
+                shape.fill(LinearGradient(stops: [
+                    .init(color: .clear, location: 0.3),
+                    .init(color: .white.opacity(0.06), location: 0.42),
+                    .init(color: .clear, location: 0.54),
+                ], startPoint: .topLeading, endPoint: .bottomTrailing))
+
+                if let tint {
+                    shape.fill(RadialGradient(colors: [tint.opacity(0.16), .clear],
+                                              center: .bottom,
+                                              startRadius: 0,
+                                              endRadius: geometry.size.width * 0.45))
+                }
+
+                shape.stroke(LinearGradient(stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .clear, location: headerEnd),
+                    .init(color: .white.opacity(0.08), location: 0.5),
+                    .init(color: .white.opacity(0.28), location: 1),
+                ], startPoint: .top, endPoint: .bottom), lineWidth: 1.2)
+            }
+        }
+        .allowsHitTesting(false)
     }
 }

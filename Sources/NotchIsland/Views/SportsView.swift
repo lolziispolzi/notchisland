@@ -35,7 +35,7 @@ struct SportsView: View {
         } else {
             WidgetMessage(symbol: "sportscourt",
                           title: "Follow your team",
-                          message: "Pick a sport and a team to see live scores and upcoming games.",
+                          message: "Search for your team to see live scores and every upcoming game.",
                           buttonTitle: "Choose Team…",
                           action: vm.openSettings)
         }
@@ -61,6 +61,12 @@ private struct GameCard: View {
                 TeamColumn(side: game.home)
             }
             StatusLabel(game: game)
+            if let competition = game.competition {
+                Text(competition)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .lineLimit(1)
+            }
         }
     }
 }
@@ -152,9 +158,17 @@ private struct GameRow: View {
     var body: some View {
         HStack(spacing: 6) {
             TeamLogo(urlString: game.opponent(of: teamID)?.team.logoURL, size: 16)
-            Text(opponentLabel)
-                .font(.system(size: 11, weight: .medium))
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(opponentLabel)
+                    .font(.system(size: 11, weight: .medium))
+                    .lineLimit(1)
+                if let competition = game.competition {
+                    Text(competition)
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .lineLimit(1)
+                }
+            }
             Spacer(minLength: 4)
             trailing
                 .font(.system(size: 11))

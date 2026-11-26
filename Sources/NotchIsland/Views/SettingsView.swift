@@ -61,6 +61,7 @@ private struct GeneralSettings: View {
                     }
                 }
                 Toggle("Show menu bar icon", isOn: $settings.showMenuBarIcon)
+                Toggle("Glossy island", isOn: $settings.glossyIsland)
             }
 
             Section("Behavior") {
@@ -257,72 +258,79 @@ private struct WeatherSettings: View {
 private struct SportsSettings: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var sports: SportsService
+    @State private var query = ""
 
-    /// Teams for the picker, including the saved favorite while the list loads.
-    private var pickerTeams: [SavedTeam] {
-        guard let favorite = settings.favoriteTeam, !sports.teams.contains(favorite) else { return sports.teams }
-        return [favorite] + sports.teams
-    }
-
-    private var teamSelection: Binding<String?> {
-        Binding(
-            get: { settings.favoriteTeam?.id },
-            set: { id in settings.favoriteTeam = pickerTeams.first { $0.id == id } }
-        )
-    }
+    private var results: [SavedTeam] { sports.search(query) }
 
     var body: some View {
         Form {
             Section {
-                Picker("League", selection: $settings.sportsLeague) {
-                    ForEach(SportsLeague.allCases) { league in
-                        Label("\(league.title) · \(league.sportName)", systemImage: league.symbol).tag(league)
-                    }
-                }
-                Picker("Favorite team", selection: teamSelection) {
-                    Text("None").tag(String?.none)
-                    ForEach(pickerTeams) { team in
-                        Text(team.name).tag(Optional(team.id))
-                    }
-                }
-                .disabled(pickerTeams.isEmpty)
-
+                TextField("Search for a team, e.g. Arsenal, Lakers, Yankees", text: $query)
                 if sports.teamsState == .loading {
-                    ProgressView().controlSize(.small)
+                    HStack {
+                        ProgressView().controlSize(.small)
+                        Text("Loading teams from every league…").font(.caption).foregroundStyle(.secondary)
+                    }
                 } else if let error = sports.teamsState.errorMessage {
                     HStack {
                         Text(error).foregroundStyle(.red)
-                        Button("Retry") { sports.loadTeams() }
+                        Button("Retry") { sports.loadAllTeams() }
                     }
                 }
+                ForEach(results, id: \.searchKey) { team in
+                    Button {
+                        settings.favoriteTeam = team
+                        if let league = team.league { settings.sportsLeague = league }
+                        query = ""
+                    } label: {
+                        HStack(spacing: 10) {
+                            TeamLogo(urlString: team.logoURL, size: 22)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(team.name)
+                                if let league = team.league {
+                                    Text("\(league.title) · \(league.sportName)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            if team.searchKey == settings.favoriteTeam?.searchKey {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            } header: {
+                Text("Your team")
             }
 
             if let team = settings.favoriteTeam {
                 Section {
                     HStack(spacing: 10) {
                         TeamLogo(urlString: team.logoURL, size: 32)
-                        Text(team.name).font(.headline)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(team.name).font(.headline)
+                            Text((team.league ?? settings.sportsLeague).title)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                         Spacer()
                         Button("Refresh Scores") { sports.refresh() }
+                        Button("Remove") { settings.favoriteTeam = nil }
                     }
                 }
             }
 
             Section {
-                Text("While your team plays, the live score shows next to the notch and updates every minute. Scores come from ESPN's public data feed.")
+                Text("Shows every game your team plays: league, cups, European and other competitions, and friendlies, each labeled with its competition. While a game is live, the score shows next to the notch and updates every minute. Scores come from ESPN's public data feed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .onAppear {
-            if sports.teams.isEmpty { sports.loadTeams() }
-        }
-        .onChange(of: settings.sportsLeague) { _, _ in
-            settings.favoriteTeam = nil
-            sports.clearTeams()
-            sports.loadTeams()
-        }
+        .onAppear { sports.loadAllTeams() }
     }
 }
 
@@ -398,33 +406,21 @@ private struct WallpaperSettings: View {
 
     private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
 
-    private var finishCaption: String {
-        switch library.finish {
-        case .light: "Soft, bright wallpapers."
-        case .dark: "Deep, calm wallpapers that keep icons and text readable."
-        case .glassy: "Any wallpaper with a frosted glass finish: softer detail, a light sheen and steady contrast."
-        }
-    }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Picker("Theme", selection: $library.finish) {
-                        ForEach(WallpaperFinish.allCases) { finish in
-                            Text(finish.title).tag(finish)
-                        }
+                    Picker("Theme", selection: $library.theme) {
+                        Text("Light").tag(WallpaperTheme.light)
+                        Text("Dark").tag(WallpaperTheme.dark)
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    .frame(width: 280)
+                    .frame(width: 200)
                     Spacer()
                     if library.isWorking { ProgressView().controlSize(.small) }
                     Button("Add Your Own…") { library.importImages() }
                 }
-                Text(finishCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
 
                 if let message = library.message {
                     Text(message)
@@ -432,14 +428,28 @@ private struct WallpaperSettings: View {
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
                 }
+                if let current = library.current, let credit = current.credit {
+                    Text("Current: \(credit)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
 
-                LazyVGrid(columns: columns, spacing: 14) {
-                    ForEach(library.visibleItems) { item in
-                        WallpaperTile(item: item, library: library, glassy: library.finish == .glassy)
+                ForEach(library.sections, id: \.category) { section in
+                    Text(section.category.title)
+                        .font(.headline)
+                    LazyVGrid(columns: columns, spacing: 14) {
+                        ForEach(section.items) { item in
+                            WallpaperTile(item: item, library: library)
+                        }
                     }
                 }
 
                 designSection
+
+                Text("Wall art: public-domain works from the Art Institute of Chicago (CC0). Places: NASA photographs (public domain). Graphic designs: originals made for NotchIsland.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             .padding(20)
         }
@@ -489,16 +499,13 @@ private struct WallpaperSettings: View {
 private struct WallpaperTile: View {
     let item: WallpaperItem
     @ObservedObject var library: WallpaperLibrary
-    let glassy: Bool
 
-    private var isCurrent: Bool {
-        library.currentID == item.id && library.currentGlassy == glassy
-    }
+    private var isCurrent: Bool { library.currentID == item.id }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Group {
-                if let image = library.thumbnail(for: item, glassy: glassy) {
+                if let image = library.thumbnail(for: item) {
                     Image(nsImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -516,8 +523,6 @@ private struct WallpaperTile: View {
             HStack(spacing: 4) {
                 if item.source == .generated {
                     Image(systemName: "sparkles").font(.caption2)
-                } else if item.source == .custom {
-                    Image(systemName: "person.crop.square").font(.caption2)
                 }
                 Text(item.name)
                     .font(.caption)
@@ -525,11 +530,13 @@ private struct WallpaperTile: View {
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture { library.apply(item, glassy: glassy) }
-        .help("Set as wallpaper")
+        .onTapGesture { library.apply(item) }
+        .help(item.credit ?? "Set as wallpaper")
         .contextMenu {
-            Button("Set as Wallpaper") { library.apply(item, glassy: false) }
-            Button("Set with Glass Finish") { library.apply(item, glassy: true) }
+            Button("Set as Wallpaper") { library.apply(item) }
+            if let source = item.sourceURL, let url = URL(string: source) {
+                Button("About the Original") { NSWorkspace.shared.open(url) }
+            }
             if item.source != .builtIn {
                 Divider()
                 Button("Remove from Library", role: .destructive) { library.remove(item) }

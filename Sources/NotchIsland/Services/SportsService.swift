@@ -4,6 +4,7 @@ import Foundation
 enum SportsLeague: String, CaseIterable, Identifiable, Codable {
     case nfl, nba, wnba, mlb, nhl
     case mls, premierLeague, laLiga, bundesliga, serieA, ligue1, championsLeague
+    case championship, eredivisie, primeiraLiga, scottishPremiership, saudiProLeague, ligaMX, brasileirao
     case collegeFootball, collegeBasketball
 
     var id: String { rawValue }
@@ -22,6 +23,13 @@ enum SportsLeague: String, CaseIterable, Identifiable, Codable {
         case .serieA: "Serie A"
         case .ligue1: "Ligue 1"
         case .championsLeague: "Champions League"
+        case .championship: "EFL Championship"
+        case .eredivisie: "Eredivisie"
+        case .primeiraLiga: "Primeira Liga"
+        case .scottishPremiership: "Scottish Premiership"
+        case .saudiProLeague: "Saudi Pro League"
+        case .ligaMX: "Liga MX"
+        case .brasileirao: "Brasileirão"
         case .collegeFootball: "College Football"
         case .collegeBasketball: "College Basketball"
         }
@@ -52,6 +60,13 @@ enum SportsLeague: String, CaseIterable, Identifiable, Codable {
         case .serieA: "soccer/ita.1"
         case .ligue1: "soccer/fra.1"
         case .championsLeague: "soccer/uefa.champions"
+        case .championship: "soccer/eng.2"
+        case .eredivisie: "soccer/ned.1"
+        case .primeiraLiga: "soccer/por.1"
+        case .scottishPremiership: "soccer/sco.1"
+        case .saudiProLeague: "soccer/ksa.1"
+        case .ligaMX: "soccer/mex.1"
+        case .brasileirao: "soccer/bra.1"
         case .collegeFootball: "football/college-football"
         case .collegeBasketball: "basketball/mens-college-basketball"
         }
@@ -75,8 +90,13 @@ struct SavedTeam: Codable, Equatable, Hashable, Identifiable {
     var name: String
     var abbreviation: String
     var logoURL: String?
+    /// The league the team was found in. Nil for teams saved by older versions.
+    var league: SportsLeague?
 
     var shortLabel: String { abbreviation.isEmpty ? name : abbreviation }
+
+    /// Unique across leagues: the same number can mean different teams in different sports.
+    var searchKey: String { "\(league?.rawValue ?? "")/\(id)" }
 }
 
 struct TeamSide: Equatable {
@@ -99,6 +119,8 @@ struct Game: Equatable, Identifiable {
     var detail: String
     var home: TeamSide
     var away: TeamSide
+    /// Competition name, e.g. "Premier League", "UEFA Champions League". Nil when ESPN doesn't say.
+    var competition: String? = nil
 
     func side(of teamID: String) -> TeamSide? {
         if home.team.id == teamID { return home }
@@ -166,6 +188,21 @@ enum ESPN {
         return URL(string: string)!
     }
 
+    /// Every schedule a team's games can be in.
+    ///
+    /// Soccer clubs play in several competitions (league, domestic cups, European cups,
+    /// friendlies). ESPN's "all" endpoint lists them all for one club ID: results by
+    /// default, upcoming fixtures with `fixture=true`. Other sports have one league,
+    /// plus a separate list for the playoffs (season type 3).
+    static func scheduleURLs(for league: SportsLeague, teamID: String) -> [URL] {
+        if league.isSoccer {
+            let all = base + "soccer/all/teams/\(teamID)/schedule"
+            return [URL(string: all)!, URL(string: all + "?fixture=true")!]
+        }
+        let path = base + league.path + "/teams/\(teamID)/schedule"
+        return [URL(string: path)!, URL(string: path + "?seasontype=3")!]
+    }
+
     // MARK: Response types (only the fields used)
 
     struct TeamsResponse: Decodable {
@@ -216,9 +253,15 @@ enum ESPN {
     }
 
     struct Event: Decodable {
+        struct League: Decodable {
+            let abbreviation: String?
+            let shortName: String?
+            let name: String?
+        }
         let id: String
         let date: String?
         let competitions: [Competition]?
+        let league: League?
     }
 
     struct Competition: Decodable {
@@ -276,10 +319,33 @@ enum ESPN {
 
     // MARK: Parsing
 
-    static func teams(from data: Data) throws -> [SavedTeam] {
+    static func teams(from data: Data, league: SportsLeague? = nil) throws -> [SavedTeam] {
         let response = try JSONDecoder().decode(TeamsResponse.self, from: data)
-        let teams = response.sports?.first?.leagues?.first?.teams?.map(\.team.saved) ?? []
+        let teams = response.sports?.first?.leagues?.first?.teams?.map { wrapper -> SavedTeam in
+            var team = wrapper.team.saved
+            team.league = league
+            return team
+        } ?? []
         return teams.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// Teams whose name or abbreviation matches the query, best matches first.
+    static func search(_ query: String, in teams: [SavedTeam], limit: Int = 25) -> [SavedTeam] {
+        let needle = query.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !needle.isEmpty else { return [] }
+        func rank(_ team: SavedTeam) -> Int? {
+            let name = team.name.lowercased()
+            if team.abbreviation.lowercased() == needle || name == needle { return 0 }
+            if name.hasPrefix(needle) { return 1 }
+            if name.split(separator: " ").contains(where: { $0.hasPrefix(needle) }) { return 2 }
+            if name.contains(needle) { return 3 }
+            return nil
+        }
+        return teams
+            .compactMap { team in rank(team).map { (team, $0) } }
+            .sorted { $0.1 != $1.1 ? $0.1 < $1.1 : $0.0.name < $1.0.name }
+            .prefix(limit)
+            .map { $0.0 }
     }
 
     static func games(from data: Data) throws -> [Game] {
@@ -305,7 +371,8 @@ enum ESPN {
                     state: Game.State(rawValue: status?.state ?? "pre") ?? .pre,
                     detail: status?.shortDetail ?? status?.detail ?? "",
                     home: TeamSide(team: homeTeam, score: home.score?.display, isHome: true),
-                    away: TeamSide(team: awayTeam, score: away.score?.display, isHome: false))
+                    away: TeamSide(team: awayTeam, score: away.score?.display, isHome: false),
+                    competition: event.league?.abbreviation ?? event.league?.shortName ?? event.league?.name)
     }
 
     static func deduplicated(_ games: [Game]) -> [Game] {
@@ -334,8 +401,8 @@ enum ESPN {
 final class SportsService: ObservableObject {
     @Published private(set) var snapshot: SportsSnapshot?
     @Published private(set) var state: LoadState = .idle
-    /// Teams of the selected league, for the Settings picker.
-    @Published private(set) var teams: [SavedTeam] = []
+    /// Teams of every supported league, for searching in Settings.
+    @Published private(set) var allTeams: [SavedTeam] = []
     @Published private(set) var teamsState: LoadState = .idle
 
     private let settings: AppSettings
@@ -377,7 +444,7 @@ final class SportsService: ObservableObject {
             stopTimers()
             return
         }
-        let league = settings.sportsLeague
+        let league = team.league ?? settings.sportsLeague
         state = .loading
         Task {
             do {
@@ -394,36 +461,57 @@ final class SportsService: ObservableObject {
         }
     }
 
-    func loadTeams() {
-        let league = settings.sportsLeague
+    /// Loads the team lists of every league once, for search.
+    func loadAllTeams() {
+        guard allTeams.isEmpty, teamsState != .loading else { return }
         teamsState = .loading
         Task {
-            do {
-                let (data, _) = try await URLSession.shared.data(from: ESPN.teamsURL(league))
-                let list = try ESPN.teams(from: data)
-                guard settings.sportsLeague == league else { return }
-                teams = list
-                teamsState = .idle
-            } catch {
-                teamsState = .failed("Couldn't load teams.")
+            let lists = await withTaskGroup(of: [SavedTeam].self) { group in
+                for league in SportsLeague.allCases {
+                    group.addTask {
+                        guard let result = try? await URLSession.shared.data(from: ESPN.teamsURL(league)) else { return [] }
+                        return (try? ESPN.teams(from: result.0, league: league)) ?? []
+                    }
+                }
+                var all: [[SavedTeam]] = []
+                for await list in group { all.append(list) }
+                return all
             }
+            // A club in two leagues we list (say, the Premier League and the Champions League)
+            // appears once, under its domestic league.
+            var seen = Set<String>()
+            var merged: [SavedTeam] = []
+            for team in lists.flatMap({ $0 }).sorted(by: { ($0.league == .championsLeague ? 1 : 0) < ($1.league == .championsLeague ? 1 : 0) }) {
+                let sport = team.league?.sportName ?? ""
+                if seen.insert("\(sport)/\(team.id)").inserted { merged.append(team) }
+            }
+            allTeams = merged
+            teamsState = merged.isEmpty ? .failed("Couldn't load teams.") : .idle
         }
     }
 
-    func clearTeams() {
-        teams = []
+    func search(_ query: String) -> [SavedTeam] {
+        ESPN.search(query, in: allTeams)
     }
 
     private static func fetchGames(league: SportsLeague, teamID: String) async throws -> [Game] {
-        let (data, _) = try await URLSession.shared.data(from: ESPN.scheduleURL(league, teamID: teamID))
-        var games = try ESPN.games(from: data)
-        // Soccer schedules list results by default; upcoming fixtures need a second call.
-        if league.isSoccer,
-           let response = try? await URLSession.shared.data(from: ESPN.scheduleURL(league, teamID: teamID, fixtures: true)),
-           let fixtures = try? ESPN.games(from: response.0) {
-            games += fixtures
+        var games: [Game] = []
+        var anySucceeded = false
+        for url in ESPN.scheduleURLs(for: league, teamID: teamID) {
+            guard let result = try? await URLSession.shared.data(from: url),
+                  (result.1 as? HTTPURLResponse)?.statusCode == 200,
+                  let parsed = try? ESPN.games(from: result.0)
+            else { continue }
+            anySucceeded = true
+            games += parsed
         }
-        return ESPN.deduplicated(games)
+        guard anySucceeded else { throw URLError(.badServerResponse) }
+        // Games without a competition name are in the team's own league.
+        return ESPN.deduplicated(games).map { game in
+            var game = game
+            if game.competition == nil { game.competition = league.title }
+            return game
+        }
     }
 
     private func scheduleFollowUps() {

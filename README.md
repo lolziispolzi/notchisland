@@ -18,9 +18,10 @@ Hover over the notch and it expands into a panel with your music, weather, calen
 - **Now playing** for Spotify and Apple Music: artwork, title, artist, a draggable progress bar, play/pause, next/previous, shuffle and repeat. Click the artwork to open the player.
 - **Weather** for your current location or any city: current conditions, feels-like, humidity, wind and a 5-day forecast. Celsius or Fahrenheit.
 - **Calendar:** your upcoming events for the week. Add an event from the notch with a title, time, duration and alert. The alert is saved on the event, so Calendar reminds you on every device.
-- **Sports:** pick a league and your favorite team. See the live score, the latest result and the next games. NFL, NBA, WNBA, MLB, NHL, MLS, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and US college football and basketball.
+- **Sports:** search for your team by name across 21 leagues. NotchIsland follows every game it plays, in every competition (league, cups, European competitions, playoffs and friendlies), each labeled with its competition, with the live score next to the notch.
 - **Lyrics:** time-synced lyrics for whatever plays in Spotify or Music. See them scroll in the island, follow the current line under the closed notch, or show them on your desktop in one of three styles, with the desktop tinted in the album's colors.
-- **Wallpaper library:** 30 original wallpapers, 15 light and 15 dark, plus your own images. Pick Light, Dark or **Glassy**, a frosted glass finish for any wallpaper that keeps contrast. Choosing one sets your Mac's desktop picture.
+- **Wallpaper library:** 30 wallpapers, 15 light and 15 dark: public-domain wall art (Hokusai, Hiroshige, Monet and more), NASA photos of Earth and space, and original graphic designs, plus your own images. Choosing one sets your Mac's desktop picture.
+- **Glossy island:** a glass-like sheen and rim on the open island, tinted by the album that's playing. The closed island stays pure black to match the notch.
 - **Design a wallpaper with Claude:** describe what you want; Claude picks the style and colors and NotchIsland paints it at your screen's resolution. Needs your own Anthropic API key.
 - **Stars:** a lyrics style where each sung word lights a star in a constellation, with the current word glowing large underneath.
 - **Edge glow:** a line of light around the screen edge, following the notch, in the album's color. It flashes with each lyric line, or pulses with the actual sound if you allow audio metering.
@@ -140,7 +141,6 @@ The default build is ad-hoc signed. See [docs/RELEASING.md](docs/RELEASING.md) f
 | Album colors for tinted backgrounds | `Services/ArtworkPalette.swift` |
 | Desktop lyrics window | `Core/DesktopLyricsController.swift`, `Views/DesktopLyricsView.swift` |
 | Wallpaper library, setting the desktop picture | `Services/WallpaperLibrary.swift` |
-| Glass finish | `Services/GlassFinish.swift` |
 | Claude wallpaper designer and painter | `Services/WallpaperDesigner.swift` |
 | Battery from IOKit power-source notifications | `Services/BatteryService.swift` |
 | Animated notch outline | `Views/NotchShape.swift` |
@@ -153,7 +153,7 @@ Most notch apps used the private `MediaRemote` framework to read now-playing inf
 
 ### About the wallpapers
 
-The 30 built-in wallpapers are original, drawn from math by `scripts/wallpapers/generate.py` (numpy and Pillow), so they're free to use and can be regenerated at any size. Your own images and Claude designs are stored in `~/Library/Application Support/NotchIsland/Wallpapers`.
+The built-in wallpapers come from three places, all free to share. Wall art is public-domain work from the Art Institute of Chicago, released under CC0. Places are NASA photographs, which are not copyrighted. Graphic designs are originals made for NotchIsland. `scripts/wallpapers/build_library.py` downloads, crops and catalogs them, and writes each credit to `Packaging/Wallpapers/catalog.json`, which the app shows. Your own images and Claude designs are stored in `~/Library/Application Support/NotchIsland/Wallpapers`.
 
 ![The built-in wallpaper library](docs/wallpapers.png)
 
