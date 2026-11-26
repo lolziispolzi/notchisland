@@ -17,7 +17,7 @@ struct SettingsView: View {
                 .tabItem { Label("Sports", systemImage: "sportscourt") }
             LyricsSettings(settings: settings, lyrics: vm.lyrics)
                 .tabItem { Label("Lyrics", systemImage: "quote.bubble") }
-            WallpaperSettings(settings: settings, audio: vm.audio, vm: vm)
+            WallpaperSettings(library: vm.wallpapers)
                 .tabItem { Label("Wallpaper", systemImage: "sparkles.tv") }
             LockScreenSettings(settings: settings, audio: vm.audio, vm: vm, preview: vm.previewLockScreen)
                 .tabItem { Label("Lock Screen", systemImage: "lock.display") }
@@ -389,69 +389,152 @@ private struct LyricsSettings: View {
     }
 }
 
-// MARK: - Live wallpaper
+// MARK: - Wallpaper
 
 private struct WallpaperSettings: View {
-    @ObservedObject var settings: AppSettings
-    @ObservedObject var audio: AudioLevelMonitor
-    @ObservedObject var vm: NotchViewModel
+    @ObservedObject var library: WallpaperLibrary
+    @State private var prompt = ""
+    @State private var apiKey = ""
+
+    private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
+
+    private var finishCaption: String {
+        switch library.finish {
+        case .light: "Soft, bright wallpapers."
+        case .dark: "Deep, calm wallpapers that keep icons and text readable."
+        case .glassy: "Any wallpaper with a frosted glass finish: softer detail, a light sheen and steady contrast."
+        }
+    }
 
     var body: some View {
-        Form {
-            Section {
-                Picker("Scene", selection: $settings.liveWallpaperScene) {
-                    ForEach(WallpaperScene.allCases) { scene in
-                        Text(scene.title).tag(scene)
-                    }
-                }
-                Picker("Show", selection: $settings.liveWallpaperWhen) {
-                    ForEach(WallpaperWhen.allCases) { when in
-                        Text(when.title).tag(when)
-                    }
-                }
-                .disabled(settings.liveWallpaperScene == .off)
-                Toggle("Use the album's colors", isOn: $settings.liveWallpaperAlbumColors)
-                    .disabled(settings.liveWallpaperScene == .off)
-                Toggle("Pause on battery power", isOn: $settings.liveWallpaperPausesOnBattery)
-                    .disabled(settings.liveWallpaperScene == .off)
-                if let error = vm.wallpaperError {
-                    Text(error).font(.caption).foregroundStyle(.red)
-                }
-            } footer: {
-                Text("The wallpaper sits behind your windows and desktop icons, and stops drawing when it's fully covered.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Toggle("Move with the sound", isOn: $settings.liveWallpaperReactsToAudio)
-                    .disabled(settings.liveWallpaperScene == .off)
-                if settings.liveWallpaperReactsToAudio, audio.state == .needsPermission || audio.state == .unavailable {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(audio.state == .needsPermission
-                             ? "Needs Screen & System Audio Recording permission. After allowing it, quit and reopen NotchIsland."
-                             : "Couldn't start audio metering. Quit and reopen NotchIsland.")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                        HStack {
-                            Button("Allow…") { audio.requestPermission() }
-                            Button("Open Privacy Settings") {
-                                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-                                    NSWorkspace.shared.open(url)
-                                }
-                            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Picker("Theme", selection: $library.finish) {
+                        ForEach(WallpaperFinish.allCases) { finish in
+                            Text(finish.title).tag(finish)
                         }
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: 280)
+                    Spacer()
+                    if library.isWorking { ProgressView().controlSize(.small) }
+                    Button("Add Your Own…") { library.importImages() }
                 }
-            } header: {
-                Text("Beat")
-            } footer: {
-                Text("With sound, the scene speeds up with the music's energy and pulses on each beat. NotchIsland only measures loudness; it never records or saves audio. Without it, the scene pulses on each lyric line.")
+                Text(finishCaption)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if let message = library.message {
+                    Text(message)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+
+                LazyVGrid(columns: columns, spacing: 14) {
+                    ForEach(library.visibleItems) { item in
+                        WallpaperTile(item: item, library: library, glassy: library.finish == .glassy)
+                    }
+                }
+
+                designSection
+            }
+            .padding(20)
+        }
+    }
+
+    private var designSection: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Describe a wallpaper and Claude designs it: the style, colors and mood. NotchIsland then paints it at your screen's full resolution and adds it to your library.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack {
+                    TextField("e.g. calm sunrise over misty hills in peach and lavender", text: $prompt)
+                        .onSubmit { library.generate(prompt: prompt) }
+                    Button("Design") { library.generate(prompt: prompt) }
+                        .disabled(prompt.trimmingCharacters(in: .whitespaces).isEmpty || library.isWorking || !library.hasAPIKey)
+                }
+                Divider()
+                if library.hasAPIKey {
+                    HStack {
+                        Label("Anthropic API key saved in your keychain", systemImage: "key.fill")
+                            .font(.caption)
+                        Spacer()
+                        Button("Remove Key") { library.removeAPIKey() }
+                    }
+                } else {
+                    HStack {
+                        SecureField("Anthropic API key", text: $apiKey)
+                        Button("Save") {
+                            library.saveAPIKey(apiKey)
+                            apiKey = ""
+                        }
+                        .disabled(apiKey.isEmpty)
+                    }
+                    Text("Needs your own key from console.anthropic.com. Each design is one request to Claude, billed to your account. The key stays in your Mac's keychain.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(6)
+        } label: {
+            Label("Design one with Claude", systemImage: "sparkles")
+        }
+    }
+}
+
+private struct WallpaperTile: View {
+    let item: WallpaperItem
+    @ObservedObject var library: WallpaperLibrary
+    let glassy: Bool
+
+    private var isCurrent: Bool {
+        library.currentID == item.id && library.currentGlassy == glassy
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Group {
+                if let image = library.thumbnail(for: item, glassy: glassy) {
+                    Image(nsImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } else {
+                    Color.gray.opacity(0.2)
+                }
+            }
+            .frame(height: 96)
+            .frame(maxWidth: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(isCurrent ? Color.accentColor : Color.primary.opacity(0.1), lineWidth: isCurrent ? 3 : 1)
+            )
+            HStack(spacing: 4) {
+                if item.source == .generated {
+                    Image(systemName: "sparkles").font(.caption2)
+                } else if item.source == .custom {
+                    Image(systemName: "person.crop.square").font(.caption2)
+                }
+                Text(item.name)
+                    .font(.caption)
+                    .lineLimit(1)
             }
         }
-        .formStyle(.grouped)
+        .contentShape(Rectangle())
+        .onTapGesture { library.apply(item, glassy: glassy) }
+        .help("Set as wallpaper")
+        .contextMenu {
+            Button("Set as Wallpaper") { library.apply(item, glassy: false) }
+            Button("Set with Glass Finish") { library.apply(item, glassy: true) }
+            if item.source != .builtIn {
+                Divider()
+                Button("Remove from Library", role: .destructive) { library.remove(item) }
+            }
+        }
     }
 }
 

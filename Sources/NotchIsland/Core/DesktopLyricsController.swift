@@ -55,7 +55,7 @@ final class DesktopLyricsController {
                                    styleMask: [.borderless],
                                    backing: .buffered,
                                    defer: false)
-        // Above the live wallpaper (+1), below desktop icons.
+        // Above the desktop picture, below desktop icons.
         window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)) + 2)
         window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = true

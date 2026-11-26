@@ -1,0 +1,212 @@
+[
+  {
+    "id": "morning-mist",
+    "name": "Morning Mist",
+    "theme": "light",
+    "file": "light/morning-mist.jpg",
+    "thumb": "thumbs/morning-mist.jpg"
+  },
+  {
+    "id": "lilac-waves",
+    "name": "Lilac Waves",
+    "theme": "light",
+    "file": "light/lilac-waves.jpg",
+    "thumb": "thumbs/lilac-waves.jpg"
+  },
+  {
+    "id": "peach-dunes",
+    "name": "Peach Dunes",
+    "theme": "light",
+    "file": "light/peach-dunes.jpg",
+    "thumb": "thumbs/peach-dunes.jpg"
+  },
+  {
+    "id": "seafoam",
+    "name": "Seafoam",
+    "theme": "light",
+    "file": "light/seafoam.jpg",
+    "thumb": "thumbs/seafoam.jpg"
+  },
+  {
+    "id": "sky-ribbons",
+    "name": "Sky Ribbons",
+    "theme": "light",
+    "file": "light/sky-ribbons.jpg",
+    "thumb": "thumbs/sky-ribbons.jpg"
+  },
+  {
+    "id": "paper-hills",
+    "name": "Paper Hills",
+    "theme": "light",
+    "file": "light/paper-hills.jpg",
+    "thumb": "thumbs/paper-hills.jpg"
+  },
+  {
+    "id": "rose-quartz",
+    "name": "Rose Quartz",
+    "theme": "light",
+    "file": "light/rose-quartz.jpg",
+    "thumb": "thumbs/rose-quartz.jpg"
+  },
+  {
+    "id": "glacier",
+    "name": "Glacier",
+    "theme": "light",
+    "file": "light/glacier.jpg",
+    "thumb": "thumbs/glacier.jpg"
+  },
+  {
+    "id": "citrus-fade",
+    "name": "Citrus Fade",
+    "theme": "light",
+    "file": "light/citrus-fade.jpg",
+    "thumb": "thumbs/citrus-fade.jpg"
+  },
+  {
+    "id": "sand-arcs",
+    "name": "Sand Arcs",
+    "theme": "light",
+    "file": "light/sand-arcs.jpg",
+    "thumb": "thumbs/sand-arcs.jpg"
+  },
+  {
+    "id": "cotton-sky",
+    "name": "Cotton Sky",
+    "theme": "light",
+    "file": "light/cotton-sky.jpg",
+    "thumb": "thumbs/cotton-sky.jpg"
+  },
+  {
+    "id": "lavender-haze",
+    "name": "Lavender Haze",
+    "theme": "light",
+    "file": "light/lavender-haze.jpg",
+    "thumb": "thumbs/lavender-haze.jpg"
+  },
+  {
+    "id": "mint-ribbons",
+    "name": "Mint Ribbons",
+    "theme": "light",
+    "file": "light/mint-ribbons.jpg",
+    "thumb": "thumbs/mint-ribbons.jpg"
+  },
+  {
+    "id": "pearl",
+    "name": "Pearl",
+    "theme": "light",
+    "file": "light/pearl.jpg",
+    "thumb": "thumbs/pearl.jpg"
+  },
+  {
+    "id": "coral-bloom",
+    "name": "Coral Bloom",
+    "theme": "light",
+    "file": "light/coral-bloom.jpg",
+    "thumb": "thumbs/coral-bloom.jpg"
+  },
+  {
+    "id": "midnight-aurora",
+    "name": "Midnight Aurora",
+    "theme": "dark",
+    "file": "dark/midnight-aurora.jpg",
+    "thumb": "thumbs/midnight-aurora.jpg"
+  },
+  {
+    "id": "deep-ocean",
+    "name": "Deep Ocean",
+    "theme": "dark",
+    "file": "dark/deep-ocean.jpg",
+    "thumb": "thumbs/deep-ocean.jpg"
+  },
+  {
+    "id": "ember-dunes",
+    "name": "Ember Dunes",
+    "theme": "dark",
+    "file": "dark/ember-dunes.jpg",
+    "thumb": "thumbs/ember-dunes.jpg"
+  },
+  {
+    "id": "violet-night",
+    "name": "Violet Night",
+    "theme": "dark",
+    "file": "dark/violet-night.jpg",
+    "thumb": "thumbs/violet-night.jpg"
+  },
+  {
+    "id": "obsidian-ribbons",
+    "name": "Obsidian Ribbons",
+    "theme": "dark",
+    "file": "dark/obsidian-ribbons.jpg",
+    "thumb": "thumbs/obsidian-ribbons.jpg"
+  },
+  {
+    "id": "forest-night",
+    "name": "Forest Night",
+    "theme": "dark",
+    "file": "dark/forest-night.jpg",
+    "thumb": "thumbs/forest-night.jpg"
+  },
+  {
+    "id": "neon-dusk",
+    "name": "Neon Dusk",
+    "theme": "dark",
+    "file": "dark/neon-dusk.jpg",
+    "thumb": "thumbs/neon-dusk.jpg"
+  },
+  {
+    "id": "graphite-arcs",
+    "name": "Graphite Arcs",
+    "theme": "dark",
+    "file": "dark/graphite-arcs.jpg",
+    "thumb": "thumbs/graphite-arcs.jpg"
+  },
+  {
+    "id": "indigo-waves",
+    "name": "Indigo Waves",
+    "theme": "dark",
+    "file": "dark/indigo-waves.jpg",
+    "thumb": "thumbs/indigo-waves.jpg"
+  },
+  {
+    "id": "cosmic-teal",
+    "name": "Cosmic Teal",
+    "theme": "dark",
+    "file": "dark/cosmic-teal.jpg",
+    "thumb": "thumbs/cosmic-teal.jpg"
+  },
+  {
+    "id": "night-dunes",
+    "name": "Night Dunes",
+    "theme": "dark",
+    "file": "dark/night-dunes.jpg",
+    "thumb": "thumbs/night-dunes.jpg"
+  },
+  {
+    "id": "black-cherry",
+    "name": "Black Cherry",
+    "theme": "dark",
+    "file": "dark/black-cherry.jpg",
+    "thumb": "thumbs/black-cherry.jpg"
+  },
+  {
+    "id": "starfield",
+    "name": "Starfield",
+    "theme": "dark",
+    "file": "dark/starfield.jpg",
+    "thumb": "thumbs/starfield.jpg"
+  },
+  {
+    "id": "moonlit-bay",
+    "name": "Moonlit Bay",
+    "theme": "dark",
+    "file": "dark/moonlit-bay.jpg",
+    "thumb": "thumbs/moonlit-bay.jpg"
+  },
+  {
+    "id": "copper-ribbons",
+    "name": "Copper Ribbons",
+    "theme": "dark",
+    "file": "dark/copper-ribbons.jpg",
+    "thumb": "thumbs/copper-ribbons.jpg"
+  }
+]

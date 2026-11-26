@@ -10,7 +10,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var desktopLyrics: DesktopLyricsController?
     private var edgeGlow: EdgeGlowController?
     private var lockScreen: LockScreenController?
-    private var liveWallpaper: LiveWallpaperController?
     private var statusItem: NSStatusItem?
     private var cancellables = Set<AnyCancellable>()
 
@@ -22,7 +21,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         desktopLyrics = DesktopLyricsController(viewModel: viewModel)
         let glow = EdgeGlowController(viewModel: viewModel)
         edgeGlow = glow
-        liveWallpaper = LiveWallpaperController(viewModel: viewModel)
         let lock = LockScreenController(viewModel: viewModel, glow: glow)
         lockScreen = lock
         viewModel.previewLockScreen = { [weak lock] in lock?.preview() }
@@ -42,7 +40,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         desktopLyrics?.update()
         edgeGlow?.update()
         lockScreen?.update()
-        liveWallpaper?.update()
     }
 
     @objc private func showSettings() {

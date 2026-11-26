@@ -20,7 +20,8 @@ Hover over the notch and it expands into a panel with your music, weather, calen
 - **Calendar:** your upcoming events for the week. Add an event from the notch with a title, time, duration and alert. The alert is saved on the event, so Calendar reminds you on every device.
 - **Sports:** pick a league and your favorite team. See the live score, the latest result and the next games. NFL, NBA, WNBA, MLB, NHL, MLS, Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and US college football and basketball.
 - **Lyrics:** time-synced lyrics for whatever plays in Spotify or Music. See them scroll in the island, follow the current line under the closed notch, or show them on your desktop in one of three styles, with the desktop tinted in the album's colors.
-- **Live wallpaper:** a moving scene behind your windows that follows the music: Aurora Lake, Contours or Nebula. It pulses on each beat and speeds up with the song's energy, in its own colors or the album's. Drawn on the GPU at 30 fps, and paused when covered.
+- **Wallpaper library:** 30 original wallpapers, 15 light and 15 dark, plus your own images. Pick Light, Dark or **Glassy**, a frosted glass finish for any wallpaper that keeps contrast. Choosing one sets your Mac's desktop picture.
+- **Design a wallpaper with Claude:** describe what you want; Claude picks the style and colors and NotchIsland paints it at your screen's resolution. Needs your own Anthropic API key.
 - **Stars:** a lyrics style where each sung word lights a star in a constellation, with the current word glowing large underneath.
 - **Edge glow:** a line of light around the screen edge, following the notch, in the album's color. It flashes with each lyric line, or pulses with the actual sound if you allow audio metering.
 - **Lock screen (experimental, off by default):** a glass player and lyrics on the lock screen, so you can play, pause and skip before you sign in.
@@ -76,6 +77,7 @@ NotchIsland has no analytics and no accounts. It makes these network requests an
 | `site.api.espn.com` and ESPN image servers | League and team ID | Scores, schedules and team logos |
 | `i.scdn.co` | Nothing beyond the image request | Spotify artwork |
 | `lrclib.net` | Song title, artist, album and length | Lyrics |
+| `api.anthropic.com` | Your wallpaper description, with your API key | Only when you press **Design** |
 
 Your location never leaves your Mac except as weather coordinates. Calendar data and notes stay on your Mac. Notes are saved in `~/Library/Application Support/NotchIsland/notes.json`. Drop zone items are stored as file paths in the app's preferences and are only copied where you tell them to go.
 
@@ -137,7 +139,9 @@ The default build is ad-hoc signed. See [docs/RELEASING.md](docs/RELEASING.md) f
 | Lyrics from LRCLIB, LRC parsing, current line | `Services/LyricsService.swift` |
 | Album colors for tinted backgrounds | `Services/ArtworkPalette.swift` |
 | Desktop lyrics window | `Core/DesktopLyricsController.swift`, `Views/DesktopLyricsView.swift` |
-| Live wallpaper: window, Metal renderer and shader | `Core/LiveWallpaperController.swift`, `Services/WallpaperRenderer.swift` |
+| Wallpaper library, setting the desktop picture | `Services/WallpaperLibrary.swift` |
+| Glass finish | `Services/GlassFinish.swift` |
+| Claude wallpaper designer and painter | `Services/WallpaperDesigner.swift` |
 | Battery from IOKit power-source notifications | `Services/BatteryService.swift` |
 | Animated notch outline | `Views/NotchShape.swift` |
 | Customize bar | `Views/CustomizeBar.swift` |
@@ -146,6 +150,12 @@ The default build is ad-hoc signed. See [docs/RELEASING.md](docs/RELEASING.md) f
 ### Why not MediaRemote?
 
 Most notch apps used the private `MediaRemote` framework to read now-playing info from any app. Since macOS 15.4, Apple blocks it for third-party apps. NotchIsland supports Spotify and Music through their public notifications and AppleScript dictionaries instead. Support for other players is a welcome contribution.
+
+### About the wallpapers
+
+The 30 built-in wallpapers are original, drawn from math by `scripts/wallpapers/generate.py` (numpy and Pillow), so they're free to use and can be regenerated at any size. Your own images and Claude designs are stored in `~/Library/Application Support/NotchIsland/Wallpapers`.
+
+![The built-in wallpaper library](docs/wallpapers.png)
 
 ### About the lock screen
 

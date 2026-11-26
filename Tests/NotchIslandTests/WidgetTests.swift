@@ -1,4 +1,4 @@
-import Metal
+import CoreImage
 import SwiftUI
 import XCTest
 @testable import NotchIsland
@@ -533,41 +533,96 @@ final class LockScreenTests: XCTestCase {
     }
 }
 
-final class LiveWallpaperTests: XCTestCase {
-    func testUniformLayoutMatchesShader() {
-        // float2, 3 floats, int, float2 padding, two float4s: 64 bytes, colors at 32 and 48.
-        XCTAssertEqual(MemoryLayout<WallpaperUniforms>.stride, 64)
-        XCTAssertEqual(MemoryLayout<WallpaperUniforms>.offset(of: \.colorA), 32)
-        XCTAssertEqual(MemoryLayout<WallpaperUniforms>.offset(of: \.colorB), 48)
-    }
-
-    func testShaderCompiles() throws {
-        guard let device = MTLCreateSystemDefaultDevice() else {
-            throw XCTSkip("No Metal device on this machine")
-        }
-        let library = try device.makeLibrary(source: WallpaperShader.source, options: nil)
-        XCTAssertNotNil(library.makeFunction(name: "wallpaper_vertex"))
-        XCTAssertNotNil(library.makeFunction(name: "wallpaper_fragment"))
-    }
-
-    func testSceneIndices() {
-        XCTAssertEqual(WallpaperScene.auroraLake.shaderIndex, 0)
-        XCTAssertEqual(WallpaperScene.contours.shaderIndex, 1)
-        XCTAssertEqual(WallpaperScene.nebula.shaderIndex, 2)
-    }
-
+final class BeatDetectionTests: XCTestCase {
     func testBeatDetection() {
         XCTAssertTrue(AudioLevelMonitor.isBeat(value: 0.7, average: 0.4, sinceLastBeat: 1))
         XCTAssertFalse(AudioLevelMonitor.isBeat(value: 0.45, average: 0.4, sinceLastBeat: 1))
         XCTAssertFalse(AudioLevelMonitor.isBeat(value: 0.7, average: 0.4, sinceLastBeat: 0.1))
     }
+}
 
-    @MainActor
-    func testAlbumColorsAreBright() throws {
-        let dark = NSColor(srgbRed: 0.2, green: 0.05, blue: 0.05, alpha: 1)
-        let (first, second) = try XCTUnwrap(LiveWallpaperController.albumColors([dark]))
-        XCTAssertGreaterThan(first.x, 0.8)
-        XCTAssertEqual(first, second)
-        XCTAssertNil(LiveWallpaperController.albumColors([]))
+final class WallpaperTests: XCTestCase {
+    func testBuiltInCatalogHas15LightAnd15Dark() throws {
+        let root = try XCTUnwrap(WallpaperLibrary.findBuiltInRoot())
+        let items = WallpaperLibrary.loadCatalog(root: root)
+        XCTAssertEqual(items.filter { $0.theme == .light }.count, 15)
+        XCTAssertEqual(items.filter { $0.theme == .dark }.count, 15)
+        XCTAssertEqual(Set(items.map(\.id)).count, 30)
+        for item in items {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: root.appendingPathComponent(item.file).path), item.file)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: root.appendingPathComponent(item.thumb).path), item.thumb)
+        }
+    }
+
+    func testGlassFinishKeepsSizeAndSoftensDetail() throws {
+        let root = try XCTUnwrap(WallpaperLibrary.findBuiltInRoot())
+        let input = try XCTUnwrap(CIImage(contentsOf: root.appendingPathComponent("thumbs/sky-ribbons.jpg")))
+        let output = GlassFinish.apply(to: input)
+        XCTAssertEqual(output.extent, input.extent)
+        let rendered = try XCTUnwrap(GlassFinish.context.createCGImage(output, from: output.extent))
+        XCTAssertEqual(rendered.width, Int(input.extent.width))
+        // Light wallpapers stay light, dark ones stay dark.
+        XCTAssertGreaterThan(GlassFinish.averageLuminance(of: output), 0.6)
+        let dark = try XCTUnwrap(CIImage(contentsOf: root.appendingPathComponent("thumbs/deep-ocean.jpg")))
+        XCTAssertLessThan(GlassFinish.averageLuminance(of: GlassFinish.apply(to: dark)), 0.4)
+    }
+
+    func testThemeDetection() throws {
+        let root = try XCTUnwrap(WallpaperLibrary.findBuiltInRoot())
+        let light = try XCTUnwrap(WallpaperLibrary.makeThumbnail(root.appendingPathComponent("light/pearl.jpg")))
+        let dark = try XCTUnwrap(WallpaperLibrary.makeThumbnail(root.appendingPathComponent("dark/starfield.jpg")))
+        XCTAssertEqual(WallpaperLibrary.theme(of: light), .light)
+        XCTAssertEqual(WallpaperLibrary.theme(of: dark), .dark)
+    }
+
+    func testRequestBodyUsesStructuredOutput() throws {
+        let body = WallpaperDesigner.requestBody(prompt: "misty hills")
+        XCTAssertEqual(body["model"] as? String, "claude-opus-5-5")
+        let config = try XCTUnwrap(body["output_config"] as? [String: Any])
+        let format = try XCTUnwrap(config["format"] as? [String: Any])
+        XCTAssertEqual(format["type"] as? String, "json_schema")
+        XCTAssertNotNil(format["schema"])
+        XCTAssertNil(body["thinking"])
+        // The body must serialize to JSON.
+        XCTAssertNoThrow(try JSONSerialization.data(withJSONObject: body))
+    }
+
+    func testParseResponseSkipsThinkingAndSanitizes() throws {
+        let recipe = #"{"name":"Peach Mist","theme":"light","style":"spiral","background":["#fff4ec","nope"],"colors":["#ffd3b6"],"description":"Soft."}"#
+        let response: [String: Any] = [
+            "stop_reason": "end_turn",
+            "content": [["type": "thinking", "thinking": ""], ["type": "text", "text": recipe]],
+        ]
+        let parsed = try WallpaperDesigner.parse(responseData: JSONSerialization.data(withJSONObject: response))
+        XCTAssertEqual(parsed.name, "Peach Mist")
+        XCTAssertEqual(parsed.style, "mesh")
+        XCTAssertEqual(parsed.background, ["#fff4ec", "#fff4ec"])
+        XCTAssertGreaterThanOrEqual(parsed.colors.count, 2)
+    }
+
+    func testParseRefusal() throws {
+        let response: [String: Any] = ["stop_reason": "refusal", "content": []]
+        XCTAssertThrowsError(try WallpaperDesigner.parse(responseData: JSONSerialization.data(withJSONObject: response))) {
+            XCTAssertEqual($0 as? WallpaperDesignerError, .refused)
+        }
+    }
+
+    func testPainterRendersEveryStyle() throws {
+        for style in ["mesh", "waves", "ribbons", "hills", "arcs"] {
+            let recipe = WallpaperRecipe(name: "Test", theme: "dark", style: style,
+                                         background: ["#101830", "#1a2450"],
+                                         colors: ["#3b4ba8", "#7a4fd8", "#2fb5a0"], description: "")
+            let image = try XCTUnwrap(WallpaperPainter.render(recipe, size: CGSize(width: 320, height: 200)), style)
+            XCTAssertEqual(image.width, 320)
+            XCTAssertEqual(image.height, 200)
+        }
+    }
+
+    func testHexParsing() {
+        XCTAssertNotNil(HexColor.parse("#A1B2C3"))
+        XCTAssertNotNil(HexColor.parse("a1b2c3"))
+        XCTAssertNil(HexColor.parse("#12345"))
+        XCTAssertNil(HexColor.parse("blue"))
+        XCTAssertEqual(WallpaperPainter.stableHash("abc"), WallpaperPainter.stableHash("abc"))
     }
 }

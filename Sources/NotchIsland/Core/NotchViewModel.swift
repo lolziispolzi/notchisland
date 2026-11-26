@@ -37,8 +37,7 @@ final class NotchViewModel: ObservableObject {
     @Published var lockScreenMode: LockScreenMode = .compact
     /// What the lock-screen code last saw, shown in Settings to help find problems.
     @Published var lockScreenStatus = LockScreenStatus()
-    /// Set when the live wallpaper can't start (no Metal device or shader error).
-    @Published var wallpaperError: String?
+
     @Published private(set) var transientActivity: ClosedActivity?
 
     let settings: AppSettings
@@ -52,6 +51,8 @@ final class NotchViewModel: ObservableObject {
     let lyrics: LyricsService
     /// Not forwarded to `objectWillChange`: it updates 30 times a second and only the glow reads it.
     let audio = AudioLevelMonitor()
+    /// Not forwarded either: only the Settings window shows it.
+    let wallpapers = WallpaperLibrary()
 
     /// Set by the app delegate.
     var openSettings: () -> Void = {}

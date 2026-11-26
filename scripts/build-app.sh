@@ -44,6 +44,10 @@ sed -e "s/__VERSION__/$VERSION/" \
     -e "s/__BUNDLE_ID__/$BUNDLE_ID/" \
     Packaging/Info.plist > "$APP/Contents/Info.plist"
 
+echo "==> Copying wallpaper library"
+mkdir -p "$APP/Contents/Resources/Wallpapers"
+cp -R Packaging/Wallpapers/. "$APP/Contents/Resources/Wallpapers/"
+
 echo "==> Building icon"
 ICONSET="$OUT/AppIcon.iconset"
 mkdir -p "$ICONSET"
