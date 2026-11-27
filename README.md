@@ -35,8 +35,17 @@ Hover over the notch and it expands into a panel with your music, weather, calen
 
 ## Requirements
 
-- macOS 14 Sonoma or later
+- macOS 10.15 Catalina or later
 - Apple silicon or Intel
+- Any Mac, with or without a notch. Without a notch, the island sits at the top center of the screen.
+
+Some features need a newer macOS:
+
+| Feature | Needs |
+| --- | --- |
+| Edge glow pulsing with the sound | macOS 13 |
+| SF Symbols icons (older systems show simple text icons) | macOS 11 |
+| Submenus in right-click menus (older systems list the items flat) | macOS 11 |
 
 ## Install
 

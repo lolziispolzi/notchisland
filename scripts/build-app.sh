@@ -39,6 +39,18 @@ echo "==> Assembling $APP"
 rm -rf "$OUT"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/NotchIsland" "$APP/Contents/MacOS/NotchIsland"
+
+echo "==> Bundling Swift Concurrency for macOS 10.15 and 11"
+# macOS 12 and newer have this library built in; older systems load this copy.
+# /usr/lib/swift stays first in the search path, so newer systems keep using their own.
+CONCURRENCY="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.5/macosx/libswift_Concurrency.dylib"
+if [ -f "$CONCURRENCY" ]; then
+  mkdir -p "$APP/Contents/Frameworks"
+  cp "$CONCURRENCY" "$APP/Contents/Frameworks/"
+  install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/NotchIsland"
+else
+  echo "warning: $CONCURRENCY not found; the app will need macOS 12 or newer" >&2
+fi
 sed -e "s/__VERSION__/$VERSION/" \
     -e "s/__BUILD__/$BUILD/" \
     -e "s/__BUNDLE_ID__/$BUNDLE_ID/" \
@@ -60,6 +72,17 @@ iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 rm -rf "$ICONSET"
 
 echo "==> Signing with identity: $SIGN_IDENTITY"
+# Sign bundled libraries first; the app's signature covers them.
+for lib in "$APP"/Contents/Frameworks/*.dylib; do
+  [ -e "$lib" ] || continue
+  if [ "$SIGN_IDENTITY" = "-" ]; then
+    codesign --force --sign - "$lib"
+  elif [[ "$SIGN_IDENTITY" == Developer\ ID* ]]; then
+    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$lib"
+  else
+    codesign --force --options runtime --sign "$SIGN_IDENTITY" "$lib"
+  fi
+done
 if [ "$SIGN_IDENTITY" = "-" ]; then
   codesign --force --sign - --entitlements Packaging/NotchIsland.entitlements "$APP"
 elif [[ "$SIGN_IDENTITY" != Developer\ ID* ]]; then

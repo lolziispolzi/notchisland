@@ -598,7 +598,12 @@ private struct LockScreenSettings: View {
             }) {
                 Toggle("Glow around the screen edge while music plays", isOn: $settings.edgeGlowEnabled)
                 Toggle("Pulse with the sound", isOn: $settings.edgeGlowReactsToAudio)
-                    .disabled(!settings.edgeGlowEnabled)
+                    .disabled(!settings.edgeGlowEnabled || !audio.isSupported)
+                if !audio.isSupported {
+                    Text("Pulsing with the sound needs macOS 13 or newer. The glow still flashes with each lyric line.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 if settings.edgeGlowReactsToAudio, audio.state == .needsPermission || audio.state == .unavailable {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(audio.state == .needsPermission
