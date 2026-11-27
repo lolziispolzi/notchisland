@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "NotchIsland",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v10_15)],
     targets: [
         .executableTarget(
             name: "NotchIsland",
