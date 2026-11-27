@@ -8,6 +8,7 @@ final class NotchController {
     private let vm: NotchViewModel
     private let settings: AppSettings
     private let panel: NotchPanel
+    private let dropCatcher = DropCatcherWindow()
     private var monitors: [Any] = []
     private var openWork: DispatchWorkItem?
     private var closeWork: DispatchWorkItem?
@@ -28,6 +29,7 @@ final class NotchController {
         // Set the frame again now that constraining is off, then show it.
         panel.setFrame(viewModel.geometry.panelFrame, display: false)
         panel.orderFrontRegardless()
+        setUpDropCatcher()
         placeAboveFullScreenApps()
 
         startMouseMonitoring()
@@ -58,7 +60,22 @@ final class NotchController {
         guard let geometry = NotchGeometry.current(for: settings.displayChoice) else { return }
         vm.geometry = geometry
         panel.setFrame(geometry.panelFrame, display: true)
+        dropCatcher.setFrame(geometry.openTriggerRect, display: true)
         placeAboveFullScreenApps()
+    }
+
+    private func setUpDropCatcher() {
+        dropCatcher.setFrame(vm.geometry.openTriggerRect, display: false)
+        dropCatcher.catcher.onDragEnter = { [weak self] in
+            guard let self, self.settings.isVisible(.drop) else { return }
+            self.open(tab: .drop)
+        }
+        dropCatcher.catcher.onDrop = { [weak self] urls in
+            guard let self else { return }
+            urls.forEach { self.vm.shelf.add($0) }
+            self.open(tab: .drop)
+        }
+        dropCatcher.orderFrontRegardless()
     }
 
     /// In a full-screen app, macOS slides its own menu bar over the top of the screen,
@@ -68,6 +85,7 @@ final class NotchController {
     private func placeAboveFullScreenApps() {
         guard settings.islandAboveFullScreen, let space = SkyLightSpace.aboveFullScreen else { return }
         space.add(panel)
+        space.add(dropCatcher)
     }
 
     // MARK: - Mouse

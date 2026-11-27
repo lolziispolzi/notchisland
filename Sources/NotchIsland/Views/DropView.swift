@@ -21,6 +21,9 @@ struct DropView: View {
                         Text("Then copy, move, share or AirDrop them.")
                             .font(.system(size: 11))
                             .foregroundStyle(.white.opacity(0.6))
+                        Button("Add Files…") { shelf.chooseFiles() }
+                            .buttonStyle(PillButtonStyle())
+                            .padding(.top, 2)
                     }
                     .foregroundStyle(.white.opacity(0.75))
                 }
@@ -58,6 +61,7 @@ struct DropView: View {
                     .lineLimit(1)
             }
             Spacer()
+            IconButton(symbol: "plus", help: "Add files") { shelf.chooseFiles() }
             IconButton(symbol: "doc.on.clipboard", help: "Copy to clipboard") { shelf.copyToClipboard() }
             IconButton(symbol: "dot.radiowaves.left.and.right", help: "AirDrop") { shelf.airDropAll() }
             SharePickerButton(items: shelf.items)

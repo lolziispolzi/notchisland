@@ -669,3 +669,18 @@ final class AllCompetitionsTests: XCTestCase {
         XCTAssertEqual(team.searchKey, "/13")
     }
 }
+
+final class DropCatcherTests: XCTestCase {
+    func testReadsFileURLsFromPasteboard() {
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("notchisland.test.\(UUID().uuidString)"))
+        pasteboard.clearContents()
+        let file = URL(fileURLWithPath: "/tmp/report.pdf")
+        pasteboard.writeObjects([file as NSURL])
+        XCTAssertEqual(DropCatcherView.fileURLs(from: pasteboard), [file])
+
+        pasteboard.clearContents()
+        pasteboard.setString("not a file", forType: .string)
+        XCTAssertTrue(DropCatcherView.fileURLs(from: pasteboard).isEmpty)
+        pasteboard.releaseGlobally()
+    }
+}

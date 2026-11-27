@@ -6,6 +6,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Fixed
+- Files couldn't be dropped on the island: a drop target over the notch now opens the Drop Zone when a file is dragged to it. Added an "Add Files…" button.
 - The island's header was hidden under the menu bar in full-screen apps; the island now stays above full-screen apps.
 - Live activities beside the notch covered app menus. They now step aside while the pointer is in the menu bar, and only the notch itself opens the island.
 - Buttons and tabs in the island needed the window to be active and ignored clicks.

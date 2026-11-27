@@ -65,6 +65,21 @@ final class ShelfStore: ObservableObject {
         items.removeAll { $0 == url }
     }
 
+    /// Lets you pick files to add, for when dragging isn't convenient.
+    func chooseFiles() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.prompt = "Add to Drop Zone"
+        NSApp.activate()
+        panel.begin { [weak self] response in
+            guard response == .OK else { return }
+            let urls = panel.urls
+            MainActor.assumeIsolated { urls.forEach { self?.add($0) } }
+        }
+    }
+
     func clear() {
         items.removeAll()
     }
