@@ -114,7 +114,7 @@ enum TemperatureUnit: String, CaseIterable, Identifiable {
     }
 
     static var localeDefault: TemperatureUnit {
-        Locale.current.measurementSystem == .us ? .fahrenheit : .celsius
+        !Locale.current.usesMetricSystem ? .fahrenheit : .celsius
     }
 }
 

@@ -315,7 +315,7 @@ final class NowPlayingService: ObservableObject {
         case .spotify:
             guard let string = await AppleScript.run(spotifyArtworkScript),
                   let url = URL(string: string), url.scheme == "https",
-                  let result = try? await URLSession.shared.data(from: url)
+                  let result = try? await URLSession.shared.compatData(from: url)
             else { return nil }
             return NSImage(data: result.0)
         }

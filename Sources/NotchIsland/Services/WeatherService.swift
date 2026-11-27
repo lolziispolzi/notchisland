@@ -245,7 +245,7 @@ final class WeatherService: ObservableObject {
             do {
                 let unit = settings.temperatureUnit
                 let url = OpenMeteo.forecastURL(latitude: location.latitude, longitude: location.longitude, unit: unit)
-                let (data, _) = try await URLSession.shared.data(from: url)
+                let (data, _) = try await URLSession.shared.compatData(from: url)
                 snapshot = try OpenMeteo.snapshot(from: data, locationName: location.name, unit: unit)
                 lastFetch = Date()
                 state = .idle
@@ -258,7 +258,7 @@ final class WeatherService: ObservableObject {
     static func searchLocations(_ query: String) async throws -> [WeatherLocation] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
-        let (data, _) = try await URLSession.shared.data(from: OpenMeteo.geocodingURL(query: trimmed))
+        let (data, _) = try await URLSession.shared.compatData(from: OpenMeteo.geocodingURL(query: trimmed))
         return try OpenMeteo.locations(from: data)
     }
 
@@ -293,8 +293,16 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate {
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
     }
 
+    /// The per-manager status arrived in macOS 11; older systems use the class method.
+    private var authorizationStatus: CLAuthorizationStatus {
+        if #available(macOS 11, *) {
+            return manager.authorizationStatus
+        }
+        return CLLocationManager.authorizationStatus()
+    }
+
     private var isDenied: Bool {
-        let status = manager.authorizationStatus
+        let status = authorizationStatus
         return status == .denied || status == .restricted
     }
 
@@ -303,7 +311,7 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate {
         guard continuation == nil, !isDenied else { return nil }
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
-            if manager.authorizationStatus == .notDetermined {
+            if authorizationStatus == .notDetermined {
                 // The location is requested once the user answers the prompt.
                 manager.requestWhenInUseAuthorization()
             } else {
@@ -333,10 +341,16 @@ final class LocationProvider: NSObject, CLLocationManagerDelegate {
         MainActor.assumeIsolated { finish(nil) }
     }
 
+    /// macOS 10.15 reports authorization changes here instead.
+    nonisolated func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        if #available(macOS 11, *) { return }
+        locationManagerDidChangeAuthorization(manager)
+    }
+
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         MainActor.assumeIsolated {
             guard continuation != nil else { return }
-            switch self.manager.authorizationStatus {
+            switch authorizationStatus {
             case .notDetermined:
                 break
             case .denied, .restricted:

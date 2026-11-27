@@ -469,7 +469,7 @@ final class SportsService: ObservableObject {
             let lists = await withTaskGroup(of: [SavedTeam].self) { group in
                 for league in SportsLeague.allCases {
                     group.addTask {
-                        guard let result = try? await URLSession.shared.data(from: ESPN.teamsURL(league)) else { return [] }
+                        guard let result = try? await URLSession.shared.compatData(from: ESPN.teamsURL(league)) else { return [] }
                         return (try? ESPN.teams(from: result.0, league: league)) ?? []
                     }
                 }
@@ -498,7 +498,7 @@ final class SportsService: ObservableObject {
         var games: [Game] = []
         var anySucceeded = false
         for url in ESPN.scheduleURLs(for: league, teamID: teamID) {
-            guard let result = try? await URLSession.shared.data(from: url),
+            guard let result = try? await URLSession.shared.compatData(from: url),
                   (result.1 as? HTTPURLResponse)?.statusCode == 200,
                   let parsed = try? ESPN.games(from: result.0)
             else { continue }

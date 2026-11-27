@@ -72,7 +72,7 @@ final class ShelfStore: ObservableObject {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
         panel.prompt = "Add to Drop Zone"
-        NSApp.activate()
+        NSApp.activateCompat()
         panel.begin { [weak self] response in
             guard response == .OK else { return }
             let urls = panel.urls
@@ -168,7 +168,7 @@ final class ShelfStore: ObservableObject {
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         panel.prompt = move ? "Move Here" : "Copy Here"
-        NSApp.activate()
+        NSApp.activateCompat()
         panel.begin { [weak self] response in
             guard response == .OK, let url = panel.url else { return }
             MainActor.assumeIsolated { self?.copy(to: url, move: move) }
@@ -185,7 +185,7 @@ final class ShelfStore: ObservableObject {
 
     func airDropAll() {
         guard !items.isEmpty, let service = NSSharingService(named: .sendViaAirDrop) else { return }
-        NSApp.activate()
+        NSApp.activateCompat()
         service.perform(withItems: items)
     }
 

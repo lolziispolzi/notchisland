@@ -12,7 +12,7 @@ struct LyricsLinesView: View {
         if let current = lyrics.lyrics {
             if current.isSynced {
                 // Checks four times a second which line is being sung.
-                TimelineView(.periodic(from: .now, by: 0.25)) { context in
+                Ticker(every: 0.25) { context in
                     SyncedLyricsScroller(lines: current.synced,
                                          current: lyrics.currentIndex(at: nowPlaying.elapsed(at: context.date)),
                                          fontSize: fontSize,
@@ -25,14 +25,14 @@ struct LyricsLinesView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     Text(current.plain.joined(separator: "\n"))
                         .font(.system(size: fontSize * 0.85, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.85))
+                        .foregroundColor(.white.opacity(0.85))
                         .multilineTextAlignment(centered ? .center : .leading)
                         .lineSpacing(spacing / 2)
                         .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
                 }
             }
         } else if lyrics.state == .loading {
-            ProgressView()
+            Spinner()
                 .controlSize(.small)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if lyrics.notFound {
@@ -51,7 +51,7 @@ struct LyricsLinesView: View {
     private func message(_ text: String) -> some View {
         Text(text)
             .font(.system(size: max(12, fontSize * 0.75), weight: .medium))
-            .foregroundStyle(.white.opacity(0.55))
+            .foregroundColor(.white.opacity(0.55))
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: centered ? .center : .leading)
     }
 }
@@ -64,44 +64,44 @@ struct SyncedLyricsScroller: View {
     let centered: Bool
     let spacing: CGFloat
 
+    /// Vertical center of each line inside the stack, measured after layout.
+    @State private var lineCenters: [Int: CGFloat] = [:]
+
     var body: some View {
+        // Moves the whole stack instead of scrolling, so the current line stays centered
+        // on every macOS version (ScrollViewReader needs macOS 11).
         GeometryReader { geometry in
-            ScrollViewReader { proxy in
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: centered ? .center : .leading, spacing: spacing) {
-                        ForEach(lines) { line in
-                            Text(line.text.isEmpty ? "♪" : line.text)
-                                .font(.system(size: fontSize, weight: line.id == current ? .bold : .semibold))
-                                .foregroundStyle(.white.opacity(opacity(for: line.id)))
-                                .blur(radius: blur(for: line.id))
-                                .scaleEffect(line.id == current ? 1 : 0.97, anchor: centered ? .center : .leading)
-                                .multilineTextAlignment(centered ? .center : .leading)
-                                .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
-                                .id(line.id)
-                        }
-                    }
-                    // Room above and below so the first and last lines can reach the middle.
-                    .padding(.vertical, geometry.size.height / 2)
-                }
-                .scrollDisabled(true)
-                .onAppear {
-                    if let current { proxy.scrollTo(current, anchor: .center) }
-                }
-                .onChange(of: current) { _, new in
-                    guard let new else { return }
-                    withAnimation(.spring(response: 0.55, dampingFraction: 0.85)) {
-                        proxy.scrollTo(new, anchor: .center)
-                    }
+            VStack(alignment: centered ? .center : .leading, spacing: spacing) {
+                ForEach(lines) { line in
+                    Text(line.text.isEmpty ? "♪" : line.text)
+                        .font(.system(size: fontSize, weight: line.id == current ? .bold : .semibold))
+                        .foregroundColor(.white.opacity(opacity(for: line.id)))
+                        .blur(radius: blur(for: line.id))
+                        .scaleEffect(line.id == current ? 1 : 0.97, anchor: centered ? .center : .leading)
+                        .multilineTextAlignment(centered ? .center : .leading)
+                        .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .background(GeometryReader { lineGeometry in
+                            Color.clear.preference(
+                                key: LyricLineCentersKey.self,
+                                value: [line.id: lineGeometry.frame(in: .named("lyricsStack")).midY])
+                        })
                 }
             }
+            .coordinateSpace(name: "lyricsStack")
+            .onPreferenceChange(LyricLineCentersKey.self) { lineCenters = $0 }
+            .offset(y: geometry.size.height / 2 - (current.flatMap { lineCenters[$0] } ?? 0))
+            .animation(.spring(response: 0.55, dampingFraction: 0.85), value: current)
+            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+            .clipped()
         }
         .mask(
-            LinearGradient(stops: [
+            LinearGradient(gradient: Gradient(stops: [
                 .init(color: .clear, location: 0),
                 .init(color: .black, location: 0.18),
                 .init(color: .black, location: 0.82),
                 .init(color: .clear, location: 1),
-            ], startPoint: .top, endPoint: .bottom)
+            ]), startPoint: .top, endPoint: .bottom)
         )
         .animation(.easeOut(duration: 0.3), value: current)
     }
@@ -131,16 +131,16 @@ struct ClosedLyricLine: View {
     @ObservedObject var lyrics: LyricsService
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 0.25)) { context in
+        Ticker(every: 0.25) { context in
             let line = lyrics.currentLine(at: nowPlaying.elapsed(at: context.date))
             ZStack {
                 Text(line.map { $0.text.isEmpty ? "♪" : $0.text } ?? "♪")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundColor(.white)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .id(line?.id ?? -1)
-                    .transition(.push(from: .bottom))
+                    .transition(.pushFromBottom)
             }
             .animation(.spring(response: 0.4, dampingFraction: 0.85), value: line?.id)
             .frame(maxWidth: .infinity)
@@ -164,7 +164,7 @@ struct CompactPlayer: View {
                     .lineLimit(1)
                 Text(nowPlaying.track?.artist ?? "")
                     .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundColor(.white.opacity(0.6))
                     .lineLimit(1)
             }
             HStack(spacing: 4) {
@@ -174,8 +174,16 @@ struct CompactPlayer: View {
                 }
                 ControlButton(symbol: "forward.fill", size: 11) { nowPlaying.next() }
                 ControlButton(symbol: "quote.bubble.fill", size: 11, isActive: true, action: onShowPlayer)
-                    .help("Back to the player")
+                    .compatHelp("Back to the player")
             }
         }
+    }
+}
+
+private struct LyricLineCentersKey: PreferenceKey {
+    static let defaultValue: [Int: CGFloat] = [:]
+
+    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
+        value.merge(nextValue()) { $1 }
     }
 }

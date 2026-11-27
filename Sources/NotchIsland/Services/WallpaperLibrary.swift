@@ -1,6 +1,5 @@
 import AppKit
 import ImageIO
-import UniformTypeIdentifiers
 
 enum WallpaperTheme: String, Codable, CaseIterable {
     case light
@@ -144,10 +143,10 @@ final class WallpaperLibrary: ObservableObject {
 
     func importImages() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.image]
+        panel.allowedFileTypes = NSImage.imageTypes
         panel.allowsMultipleSelection = true
         panel.prompt = "Add to Library"
-        NSApp.activate()
+        NSApp.activateCompat()
         panel.begin { [weak self] response in
             guard response == .OK else { return }
             let urls = panel.urls
@@ -338,7 +337,7 @@ final class WallpaperLibrary: ObservableObject {
     }
 
     nonisolated static func writeJPEG(_ image: CGImage, to url: URL, quality: Double = 0.9) throws {
-        guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
+        guard let destination = CGImageDestinationCreateWithURL(url as CFURL, "public.jpeg" as CFString, 1, nil)
         else { throw CocoaError(.fileWriteUnknown) }
         CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: quality] as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { throw CocoaError(.fileWriteUnknown) }

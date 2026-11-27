@@ -188,7 +188,7 @@ enum LRCLIB {
     private static func request<T: Decodable>(_ url: URL, as type: T.Type) async throws -> T? {
         var request = URLRequest(url: url, timeoutInterval: 10)
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.compatData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 404 { return nil }
         guard (200..<300).contains(status) else { throw URLError(.badServerResponse) }

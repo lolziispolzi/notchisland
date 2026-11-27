@@ -16,14 +16,18 @@ final class AudioLevelMonitor: ObservableObject {
         case needsPermission
         /// Allowed, but capture failed to start.
         case unavailable
+        /// System audio capture needs macOS 13 or newer.
+        case unsupported
     }
 
     /// Loudness from 0 (silent) to 1, smoothed.
     @Published private(set) var level: Double = 0
     @Published private(set) var state: State = .off
 
-    private var stream: SCStream?
-    private let output = AudioLevelOutput()
+    /// The running SCStream (macOS 13 and newer).
+    private var stream: AnyObject?
+    /// Receives audio buffers. Created only where ScreenCaptureKit exists.
+    private var output: AnyObject?
     /// Features currently wanting audio (edge glow, wallpaper). Metering runs while any do.
     private var users: Set<String> = []
     /// Slow-moving average loudness, for beat detection.
@@ -32,16 +36,32 @@ final class AudioLevelMonitor: ObservableObject {
     private(set) var lastBeatTime: CFAbsoluteTime = 0
 
     init() {
-        output.onLevel = { [weak self] value in
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated { self?.ingest(value) }
+        if #available(macOS 13, *) {
+            let output = AudioLevelOutput()
+            output.onLevel = { [weak self] value in
+                DispatchQueue.main.async {
+                    MainActor.assumeIsolated { self?.ingest(value) }
+                }
             }
+            self.output = output
+        } else {
+            state = .unsupported
         }
+    }
+
+    /// True when this Mac can measure system audio (macOS 13 and newer).
+    var isSupported: Bool {
+        if #available(macOS 13, *) { return true }
+        return false
     }
 
     /// Starts metering if the permission is already granted. Never shows a prompt:
     /// starting capture without permission makes macOS ask again every time.
     func start() {
+        guard #available(macOS 13, *), let output = output as? AudioLevelOutput else {
+            state = .unsupported
+            return
+        }
         guard state != .running, state != .starting else { return }
         guard CGPreflightScreenCaptureAccess() else {
             state = .needsPermission
@@ -81,9 +101,10 @@ final class AudioLevelMonitor: ObservableObject {
     }
 
     func stop() {
-        let running = stream
-        stream = nil
         level = 0
+        guard #available(macOS 13, *) else { return }
+        let running = stream as? SCStream
+        stream = nil
         if state == .running || state == .starting { state = .off }
         Task { try? await running?.stopCapture() }
     }
@@ -91,6 +112,7 @@ final class AudioLevelMonitor: ObservableObject {
     /// Shows the macOS permission prompt once. Called only from a button in Settings.
     /// macOS applies a new grant after the app is quit and reopened.
     func requestPermission() {
+        guard isSupported else { return }
         if CGRequestScreenCaptureAccess() {
             state = .off
             start()
@@ -131,6 +153,7 @@ final class AudioLevelMonitor: ObservableObject {
 }
 
 /// Receives audio buffers on a background queue and reports loudness ~30 times a second.
+@available(macOS 13, *)
 final class AudioLevelOutput: NSObject, SCStreamOutput, @unchecked Sendable {
     let queue = DispatchQueue(label: "NotchIsland.audio-level")
     var onLevel: ((Double) -> Void)?

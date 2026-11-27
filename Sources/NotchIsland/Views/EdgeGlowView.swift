@@ -62,7 +62,7 @@ struct EdgeGlowView: View {
     }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
+        Ticker(every: 1.0 / 30) { context in
             let color = vm.nowPlaying.accentColor
             let intensity = currentIntensity(at: context.date)
             let outline = ScreenOutline(notch: notch)
@@ -77,7 +77,7 @@ struct EdgeGlowView: View {
                     .stroke(color.opacity(0.4 + 0.6 * intensity), lineWidth: 2.5)
             }
         }
-        .ignoresSafeArea()
+        .edgesIgnoringSafeArea(.all)
         .allowsHitTesting(false)
     }
 

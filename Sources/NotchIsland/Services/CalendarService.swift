@@ -65,18 +65,23 @@ final class CalendarService: ObservableObject {
 
     static func currentAccess() -> Access {
         guard AppEnvironment.isBundled else { return .unavailable }
-        switch EKEventStore.authorizationStatus(for: .event) {
-        case .fullAccess: return .granted
-        case .notDetermined: return .notDetermined
-        default: return .denied
+        let status = EKEventStore.authorizationStatus(for: .event)
+        if status == .notDetermined { return .notDetermined }
+        if #available(macOS 14, *) {
+            return status == .fullAccess ? .granted : .denied
         }
+        return status == .authorized ? .granted : .denied
     }
 
     func requestAccess() {
         guard AppEnvironment.isBundled else { return }
-        NSApp.activate()
+        NSApp.activateCompat()
         Task {
-            _ = try? await store.requestFullAccessToEvents()
+            if #available(macOS 14, *) {
+                _ = try? await store.requestFullAccessToEvents()
+            } else {
+                _ = try? await store.requestAccess(to: .event)
+            }
             access = Self.currentAccess()
             reload()
         }
@@ -114,7 +119,7 @@ final class CalendarService: ObservableObject {
                               start: event.startDate,
                               end: event.endDate,
                               isAllDay: event.isAllDay,
-                              color: Color(nsColor: event.calendar?.color ?? .systemBlue),
+                              color: Color(event.calendar?.color ?? .systemBlue),
                               location: event.location)
             }
         scheduleHeadsUp()
@@ -199,9 +204,9 @@ enum RelativeTime {
                   calendar.isDate(start, inSameDayAs: tomorrow) {
             day = "Tomorrow"
         } else {
-            day = start.formatted(.dateTime.weekday(.abbreviated))
+            day = DateText.string(start, template: "EEE")
         }
-        let time = isAllDay ? "All day" : start.formatted(date: .omitted, time: .shortened)
+        let time = isAllDay ? "All day" : DateText.string(start, date: .none, time: .short)
         return "\(day) · \(time)"
     }
 }

@@ -93,7 +93,7 @@ enum WallpaperDesigner {
         request.setValue(fallbackBeta, forHTTPHeaderField: "anthropic-beta")
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody(prompt: prompt))
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.compatData(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard status == 200 else {
             let error = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
