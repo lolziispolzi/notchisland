@@ -104,7 +104,7 @@ struct ConstellationLyricsView: View {
                 .shadow(color: color.opacity(0.8), radius: 20)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-                .contentTransition(.opacity)
+                .compatOpacityContentTransition()
                 .animation(.easeOut(duration: 0.2), value: frame.visibleCount)
         }
     }

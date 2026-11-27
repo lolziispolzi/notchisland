@@ -175,6 +175,16 @@ extension View {
         }
     }
 
+    /// Cross-fades changing text (macOS 13 and newer).
+    @ViewBuilder
+    func compatOpacityContentTransition() -> some View {
+        if #available(macOS 13, *) {
+            contentTransition(.opacity)
+        } else {
+            self
+        }
+    }
+
     /// Return key triggers this button (macOS 11 and newer).
     @ViewBuilder
     func compatDefaultAction() -> some View {
