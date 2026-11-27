@@ -29,6 +29,15 @@ jobs:
       - name: Package app (ad-hoc signed)
         run: ./scripts/build-app.sh
 
+      - name: Inspect app linking
+        run: |
+          BIN=build/NotchIsland.app/Contents/MacOS/NotchIsland
+          vtool -show-build "$BIN" | grep -E "minos|platform" || true
+          otool -L "$BIN"
+          otool -l "$BIN" | grep -B1 -A2 -E "LC_LOAD_WEAK_DYLIB|LC_RPATH" || true
+          ls build/NotchIsland.app/Contents/Frameworks 2>/dev/null || true
+          find "$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib" -maxdepth 2 -name "swift-5*" -o -maxdepth 3 -name "libswift_Concurrency.dylib" | head
+
       - name: Upload app
         uses: actions/upload-artifact@v4
         with:
