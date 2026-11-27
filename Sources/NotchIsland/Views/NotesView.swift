@@ -4,7 +4,8 @@ import SwiftUI
 struct NotesView: View {
     @ObservedObject var vm: NotchViewModel
     @ObservedObject var notes: NotesStore
-    @FocusState private var editorFocused: Bool
+    @State private var editorFocused = false
+    @State private var focusRequest = 0
 
     var body: some View {
         if notes.notes.isEmpty {
@@ -29,7 +30,7 @@ struct NotesView: View {
             HStack {
                 Text("NOTES")
                     .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.45))
+                    .foregroundColor(.white.opacity(0.45))
                 Spacer()
                 IconButton(symbol: "plus", help: "New note", action: addNote)
             }
@@ -55,7 +56,7 @@ struct NotesView: View {
                         .overlay(Circle().stroke(Color.white, lineWidth: note.color == color ? 1.5 : 0))
                         .contentShape(Circle().inset(by: -3))
                         .onTapGesture { notes.setColor(note.id, color) }
-                        .help(color.rawValue.capitalized)
+                        .compatHelp(color.rawValue.capitalized)
                 }
                 Spacer()
                 IconButton(symbol: note.isPinned ? "pin.fill" : "pin",
@@ -67,13 +68,10 @@ struct NotesView: View {
                 }
             }
 
-            TextEditor(text: Binding(
+            PlainTextEditor(text: Binding(
                 get: { notes.note(note.id)?.text ?? "" },
                 set: { notes.updateText(note.id, $0) }
-            ))
-            .font(.system(size: 13))
-            .scrollContentBackground(.hidden)
-            .focused($editorFocused)
+            ), focusRequest: focusRequest, onFocusChange: { editorFocused = $0 })
             .padding(6)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -89,18 +87,24 @@ struct NotesView: View {
     @ViewBuilder
     private func menu(for note: Note) -> some View {
         Button(note.isPinned ? "Unpin" : "Pin as Important") { notes.togglePin(note.id) }
-        Menu("Color") {
+        if #available(macOS 11, *) {
+            Menu("Color") {
+                ForEach(NoteColor.allCases) { color in
+                    Button(color.rawValue.capitalized) { notes.setColor(note.id, color) }
+                }
+            }
+        } else {
             ForEach(NoteColor.allCases) { color in
-                Button(color.rawValue.capitalized) { notes.setColor(note.id, color) }
+                Button("Color: \(color.rawValue.capitalized)") { notes.setColor(note.id, color) }
             }
         }
         Divider()
-        Button("Delete Note", role: .destructive) { notes.delete(note.id) }
+        Button("Delete Note") { notes.delete(note.id) }
     }
 
     private func addNote() {
         notes.add()
-        DispatchQueue.main.async { editorFocused = true }
+        DispatchQueue.main.async { focusRequest += 1 }
     }
 }
 
@@ -118,9 +122,9 @@ private struct NoteRow: View {
                 .lineLimit(1)
             Spacer(minLength: 0)
             if note.isPinned {
-                Image(systemName: "pin.fill")
+                SymbolImage("pin.fill")
                     .font(.system(size: 8))
-                    .foregroundStyle(.yellow)
+                    .foregroundColor(.yellow)
             }
         }
         .padding(.horizontal, 6)

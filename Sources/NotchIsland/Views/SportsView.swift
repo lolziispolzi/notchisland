@@ -28,7 +28,7 @@ struct SportsView: View {
                               buttonTitle: "Try Again",
                               action: { sports.refresh() })
             } else {
-                ProgressView()
+                Spinner()
                     .controlSize(.small)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -52,11 +52,11 @@ private struct GameCard: View {
                 if game.state == .pre {
                     Text("vs")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundColor(.white.opacity(0.5))
                 } else {
                     Text("\(game.away.score ?? "0")  –  \(game.home.score ?? "0")")
                         .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .monospacedDigit()
+                        .compatMonospacedDigit()
                 }
                 TeamColumn(side: game.home)
             }
@@ -64,7 +64,7 @@ private struct GameCard: View {
             if let competition = game.competition {
                 Text(competition)
                     .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.45))
+                    .foregroundColor(.white.opacity(0.45))
                     .lineLimit(1)
             }
         }
@@ -90,12 +90,8 @@ struct TeamLogo: View {
     let size: CGFloat
 
     var body: some View {
-        AsyncImage(url: urlString.flatMap(URL.init(string:))) { phase in
-            if let image = phase.image {
-                image.resizable().scaledToFit()
-            } else {
-                Circle().fill(Color.white.opacity(0.1))
-            }
+        RemoteImage(url: urlString.flatMap(URL.init(string:)), contentMode: .fit) {
+            Circle().fill(Color.white.opacity(0.1))
         }
         .frame(width: size, height: size)
     }
@@ -113,13 +109,13 @@ private struct StatusLabel: View {
                     Text(game.detail.isEmpty ? "Live" : game.detail)
                 }
             case .pre:
-                Text(game.date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute())
+                Text(DateText.string(game.date, template: "EEEMMMdjmm"))
             case .post:
                 Text(game.detail.isEmpty ? "Final" : game.detail)
             }
         }
         .font(.system(size: 11, weight: .medium))
-        .foregroundStyle(.white.opacity(0.7))
+        .foregroundColor(.white.opacity(0.7))
     }
 }
 
@@ -134,7 +130,7 @@ private struct GameList: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(showsUpcoming ? "UPCOMING" : "RECENT")
                 .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(.white.opacity(0.45))
+                .foregroundColor(.white.opacity(0.45))
             ForEach(games) { game in
                 GameRow(game: game, teamID: teamID)
             }
@@ -165,7 +161,7 @@ private struct GameRow: View {
                 if let competition = game.competition {
                     Text(competition)
                         .font(.system(size: 8, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.4))
+                        .foregroundColor(.white.opacity(0.4))
                         .lineLimit(1)
                 }
             }
@@ -181,11 +177,11 @@ private struct GameRow: View {
            let mine = game.side(of: teamID)?.score,
            let theirs = game.opponent(of: teamID)?.score {
             Text("\(result) \(mine)–\(theirs)")
-                .foregroundStyle(result == "W" ? Color.green : (result == "L" ? Color.red : Color.white.opacity(0.7)))
-                .monospacedDigit()
+                .foregroundColor(result == "W" ? Color.green : (result == "L" ? Color.red : Color.white.opacity(0.7)))
+                .compatMonospacedDigit()
         } else {
-            Text(game.date, format: .dateTime.weekday(.abbreviated).hour().minute())
-                .foregroundStyle(.white.opacity(0.55))
+            Text(DateText.string(game.date, template: "EEEjmm"))
+                .foregroundColor(.white.opacity(0.55))
         }
     }
 }

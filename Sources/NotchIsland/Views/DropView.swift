@@ -11,22 +11,22 @@ struct DropView: View {
         if shelf.items.isEmpty {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                .foregroundStyle(.white.opacity(vm.isDropTargeted ? 0.8 : 0.3))
-                .overlay {
+                .foregroundColor(.white.opacity(vm.isDropTargeted ? 0.8 : 0.3))
+                .overlay(
                     VStack(spacing: 6) {
-                        Image(systemName: "tray.and.arrow.down.fill")
+                        SymbolImage("tray.and.arrow.down.fill")
                             .font(.system(size: 22))
                         Text("Drop files here")
                             .font(.system(size: 13, weight: .semibold))
                         Text("Then copy, move, share or AirDrop them.")
                             .font(.system(size: 11))
-                            .foregroundStyle(.white.opacity(0.6))
+                            .foregroundColor(.white.opacity(0.6))
                         Button("Add Files…") { shelf.chooseFiles() }
                             .buttonStyle(PillButtonStyle())
                             .padding(.top, 2)
                     }
-                    .foregroundStyle(.white.opacity(0.75))
-                }
+                    .foregroundColor(.white.opacity(0.75))
+                )
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 toolbar
@@ -51,13 +51,13 @@ struct DropView: View {
         HStack(spacing: 10) {
             Text(ShelfStore.countLabel(shelf.items.count))
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundColor(.white.opacity(0.6))
             if shelf.isBusy {
-                ProgressView().controlSize(.mini)
+                Spinner().controlSize(.mini)
             } else if let message = shelf.statusMessage {
                 Text(message)
                     .font(.system(size: 11))
-                    .foregroundStyle(.green)
+                    .foregroundColor(.green)
                     .lineLimit(1)
             }
             Spacer()
@@ -66,7 +66,7 @@ struct DropView: View {
             IconButton(symbol: "dot.radiowaves.left.and.right", help: "AirDrop") { shelf.airDropAll() }
             SharePickerButton(items: shelf.items)
                 .frame(width: 18, height: 18)
-                .help("Share")
+                .compatHelp("Share")
             IconButton(symbol: "trash", help: "Clear the drop zone") { shelf.clear() }
         }
     }
@@ -76,7 +76,7 @@ struct DropView: View {
             HStack(spacing: 6) {
                 Text("Copy to")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.45))
+                    .foregroundColor(.white.opacity(0.45))
                 ForEach(shelf.destinations) { destination in
                     DestinationChip(name: destination.name, symbol: destination.symbol) {
                         shelf.copy(to: destination.url)
@@ -121,20 +121,30 @@ private struct ShelfItemView: View {
         .contextMenu {
             Button("Open") { NSWorkspace.shared.open(url) }
             Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-            Menu("Copy To") {
-                ForEach(shelf.destinations) { destination in
-                    Button(destination.name) { shelf.copy([url], to: destination.url) }
+            if #available(macOS 11, *) {
+                Menu("Copy To") {
+                    ForEach(shelf.destinations) { destination in
+                        Button(destination.name) { shelf.copy([url], to: destination.url) }
+                    }
                 }
-            }
-            Menu("Move To") {
+                Menu("Move To") {
+                    ForEach(shelf.destinations) { destination in
+                        Button(destination.name) { shelf.copy([url], to: destination.url, move: true) }
+                    }
+                }
+            } else {
+                // No submenus before macOS 11: list each destination directly.
                 ForEach(shelf.destinations) { destination in
-                    Button(destination.name) { shelf.copy([url], to: destination.url, move: true) }
+                    Button("Copy to \(destination.name)") { shelf.copy([url], to: destination.url) }
+                }
+                ForEach(shelf.destinations) { destination in
+                    Button("Move to \(destination.name)") { shelf.copy([url], to: destination.url, move: true) }
                 }
             }
             Divider()
             Button("Remove from Drop Zone") { shelf.remove(url) }
         }
-        .help(url.path)
+        .compatHelp(url.path)
     }
 }
 
@@ -146,7 +156,7 @@ private struct DestinationChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 4) {
-                Image(systemName: symbol)
+                SymbolImage(symbol)
                     .font(.system(size: 10))
                 Text(name)
                     .font(.system(size: 10, weight: .semibold))
@@ -156,7 +166,7 @@ private struct DestinationChip: View {
             .background(Capsule().fill(Color.white.opacity(0.12)))
             .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -167,13 +177,13 @@ struct IconButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol)
+            SymbolImage(symbol)
                 .font(.system(size: 12))
                 .frame(width: 18, height: 18)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .help(help)
+        .buttonStyle(PlainButtonStyle())
+        .compatHelp(help)
     }
 }
 
@@ -183,7 +193,7 @@ struct SharePickerButton: NSViewRepresentable {
     let items: [URL]
 
     func makeNSView(context: Context) -> NSButton {
-        let image = NSImage(systemSymbolName: "square.and.arrow.up", accessibilityDescription: "Share") ?? NSImage()
+        let image = NSImage.symbol("square.and.arrow.up", description: "Share") ?? NSImage(named: NSImage.shareTemplateName) ?? NSImage()
         let button = NSButton(image: image, target: context.coordinator, action: #selector(Coordinator.share(_:)))
         button.isBordered = false
         button.contentTintColor = .white

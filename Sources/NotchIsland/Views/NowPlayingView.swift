@@ -10,7 +10,7 @@ struct NowPlayingView: View {
             HStack(spacing: 14) {
                 ArtworkView(image: nowPlaying.artwork, size: 84, cornerRadius: 14)
                     .onTapGesture { nowPlaying.openPlayer() }
-                    .help("Open \(nowPlaying.player?.appName ?? "player")")
+                    .compatHelp("Open \(nowPlaying.player?.appName ?? "player")")
 
                 VStack(alignment: .leading, spacing: 6) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -19,12 +19,12 @@ struct NowPlayingView: View {
                             .lineLimit(1)
                         Text(nowPlaying.player.map { "\(track.artist) · \($0.appName)" } ?? track.artist)
                             .font(.system(size: 13))
-                            .foregroundStyle(.white.opacity(0.6))
+                            .foregroundColor(.white.opacity(0.6))
                             .lineLimit(1)
                     }
 
                     // Redraws once a second only while the island is open.
-                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                    Ticker(every: 1) { context in
                         ProgressRow(elapsed: nowPlaying.elapsed(at: context.date),
                                     duration: track.duration,
                                     onSeek: { nowPlaying.seek(to: $0) })
@@ -44,7 +44,7 @@ struct NowPlayingView: View {
                         }
                         if showsLyricsButton {
                             ControlButton(symbol: "quote.bubble", size: 11, isActive: false, action: onShowLyrics)
-                                .help("Show lyrics")
+                                .compatHelp("Show lyrics")
                         }
                     }
                 }
@@ -58,7 +58,7 @@ struct NowPlayingView: View {
                         .font(.system(size: 15, weight: .semibold))
                     Text("Play something in Spotify or Music.")
                         .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundColor(.white.opacity(0.5))
                     Button("Open Spotify") { nowPlaying.openPlayer() }
                         .buttonStyle(PillButtonStyle())
                         .padding(.top, 4)
@@ -82,9 +82,9 @@ struct ArtworkView: View {
             } else {
                 ZStack {
                     Color.white.opacity(0.1)
-                    Image(systemName: "music.note")
+                    SymbolImage("music.note")
                         .font(.system(size: size * 0.35))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundColor(.white.opacity(0.5))
                 }
             }
         }
@@ -137,8 +137,8 @@ struct ProgressRow: View {
             .frame(height: 12)
             Text(TimeFormat.string(duration))
         }
-        .font(.system(size: 10, weight: .medium).monospacedDigit())
-        .foregroundStyle(.white.opacity(0.6))
+        .font(Font.system(size: 10, weight: .medium).monospacedDigit())
+        .foregroundColor(.white.opacity(0.6))
     }
 }
 
@@ -150,13 +150,13 @@ struct ControlButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol)
+            SymbolImage(symbol)
                 .font(.system(size: size, weight: isActive == nil ? .regular : .semibold))
-                .foregroundStyle(isActive == false ? Color.white.opacity(0.4) : Color.white)
+                .foregroundColor(isActive == false ? Color.white.opacity(0.4) : Color.white)
                 .frame(width: 26, height: 24)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

@@ -47,9 +47,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindow.show(settings: settings, viewModel: viewModel)
     }
 
+    /// Menu bar icon for macOS 10.15, which has no SF Symbols: a small filled capsule.
+    private static func capsuleIcon() -> NSImage {
+        let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
+            NSColor.black.setFill()
+            NSBezierPath(roundedRect: NSRect(x: 2, y: 6, width: rect.width - 4, height: 7),
+                         xRadius: 3.5, yRadius: 3.5).fill()
+            return true
+        }
+        image.isTemplate = true
+        return image
+    }
+
     private func setUpStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "capsule.fill", accessibilityDescription: "NotchIsland")
+        item.button?.image = NSImage.symbol("capsule.fill", description: "NotchIsland") ?? Self.capsuleIcon()
 
         let menu = NSMenu()
         let settingsItem = NSMenuItem(title: "Settings…", action: #selector(showSettings), keyEquivalent: ",")

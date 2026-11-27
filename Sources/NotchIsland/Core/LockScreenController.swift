@@ -1,6 +1,6 @@
 import AppKit
 import Combine
-import OSLog
+import os
 import SwiftUI
 
 /// Diagnostics for the lock screen, shown in Settings.
@@ -47,7 +47,7 @@ final class LockScreenController {
     private var previewWork: DispatchWorkItem?
     private var isPreviewing = false
     private(set) var isLocked = false
-    private let log = Logger(subsystem: "io.github.notchisland", category: "lockscreen")
+    private let log = OSLog(subsystem: "io.github.notchisland", category: "lockscreen")
 
     /// Above the lock screen without private APIs, for windows allowed before login.
     /// Used together with `SkyLightSpace.lockScreen`; whichever works on this macOS wins.
@@ -95,7 +95,7 @@ final class LockScreenController {
     private func setLocked(_ locked: Bool) {
         guard locked != isLocked else { return }
         isLocked = locked
-        log.info("Screen \(locked ? "locked" : "unlocked", privacy: .public)")
+        os_log("Screen %{public}@", log: log, type: .info, locked ? "locked" : "unlocked")
         if locked {
             vm.lockScreenStatus.lastLocked = Date()
         } else {
@@ -181,7 +181,7 @@ final class LockScreenController {
     private func record(_ message: String) {
         guard vm.lockScreenStatus.lastAttempt != message else { return }
         vm.lockScreenStatus.lastAttempt = message
-        log.info("\(message, privacy: .public)")
+        os_log("%{public}@", log: log, type: .info, message)
     }
 
     /// Where the clickable player sits for each mode, in screen coordinates.
@@ -218,7 +218,7 @@ final class LockScreenController {
         window.backgroundColor = .clear
         window.hasShadow = false
         window.isReleasedWhenClosed = false
-        let hosting = FirstMouseHostingView(rootView: content.preferredColorScheme(.dark))
+        let hosting = FirstMouseHostingView(rootView: content.compatDarkScheme())
         hosting.autoresizingMask = [.width, .height]
         window.contentView = hosting
         return window
@@ -252,7 +252,7 @@ struct LockScreenStage: View {
                 }
             }
         }
-        .ignoresSafeArea()
+        .edgesIgnoringSafeArea(.all)
         .animation(.easeInOut(duration: 0.6), value: vm.lockScreenMode)
     }
 }
@@ -269,7 +269,7 @@ struct LockScreenPlayer: View {
                 ArtworkView(image: nowPlaying.artwork, size: LockScreenController.coverSize, cornerRadius: 22)
                     .shadow(color: .black.opacity(0.5), radius: 30, y: 14)
                     .onTapGesture(perform: nextMode)
-                    .help("Click for lyrics")
+                    .compatHelp("Click for lyrics")
                     .transition(.scale(scale: 0.4, anchor: .bottomLeading).combined(with: .opacity))
             }
             card
@@ -283,13 +283,13 @@ struct LockScreenPlayer: View {
             HStack(spacing: 12) {
                 ArtworkView(image: nowPlaying.artwork, size: 46, cornerRadius: 9)
                     .onTapGesture(perform: nextMode)
-                    .help("Click to enlarge")
+                    .compatHelp("Click to enlarge")
                 VStack(alignment: .leading, spacing: 2) {
                     Text(nowPlaying.track?.title ?? "")
                         .font(.system(size: 14, weight: .semibold))
                     Text(nowPlaying.track?.artist ?? "")
                         .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundColor(.white.opacity(0.7))
                 }
                 .lineLimit(1)
                 Spacer(minLength: 0)
@@ -298,7 +298,7 @@ struct LockScreenPlayer: View {
                 }
             }
 
-            TimelineView(.periodic(from: .now, by: 1)) { context in
+            Ticker(every: 1) { context in
                 ProgressRow(elapsed: nowPlaying.elapsed(at: context.date),
                             duration: nowPlaying.track?.duration ?? 0,
                             onSeek: { nowPlaying.seek(to: $0) })
@@ -315,13 +315,13 @@ struct LockScreenPlayer: View {
                 ControlButton(symbol: "quote.bubble", size: 12, isActive: vm.lockScreenMode == .lyrics) {
                     vm.lockScreenMode = vm.lockScreenMode == .lyrics ? .compact : .lyrics
                 }
-                .help("Lyrics")
+                .compatHelp("Lyrics")
             }
         }
-        .foregroundStyle(.white)
+        .foregroundColor(.white)
         .padding(16)
         .frame(width: LockScreenController.cardSize.width - 20, height: LockScreenController.cardSize.height - 10)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(FrostedBackground().clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous)))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .stroke(Color.white.opacity(0.25), lineWidth: 1)

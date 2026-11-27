@@ -22,7 +22,7 @@ struct ClosedActivityView: View {
             }
         }
         .font(.system(size: 11, weight: .semibold))
-        .foregroundStyle(.white)
+        .foregroundColor(.white)
     }
 
     @ViewBuilder
@@ -37,7 +37,7 @@ struct ClosedActivityView: View {
                 HStack(spacing: 4) {
                     Circle().fill(Color.red).frame(width: 5, height: 5)
                     Text("\(game.away.team.shortLabel) \(game.away.score ?? "0")")
-                        .monospacedDigit()
+                        .compatMonospacedDigit()
                         .lineLimit(1)
                 }
             }
@@ -64,23 +64,23 @@ struct ClosedActivityView: View {
         case .charging:
             HStack(spacing: 3) {
                 Text("\(vm.battery.info?.percent ?? 0)%")
-                    .monospacedDigit()
-                Image(systemName: "bolt.fill")
+                    .compatMonospacedDigit()
+                SymbolImage("bolt.fill")
                     .font(.system(size: 10))
             }
-            .foregroundStyle(.green)
+            .foregroundColor(.green)
         case .liveScore:
             if let game = vm.sports.snapshot?.featured {
                 Text("\(game.home.score ?? "0") \(game.home.team.shortLabel)")
-                    .monospacedDigit()
+                    .compatMonospacedDigit()
                     .lineLimit(1)
             }
         case .upcomingEvent:
             if let event = vm.calendar.headsUp {
-                TimelineView(.periodic(from: .now, by: 30)) { context in
+                Ticker(every: 30) { context in
                     Text(RelativeTime.countdown(to: event.start, from: context.date))
                 }
-                .foregroundStyle(.orange)
+                .foregroundColor(.orange)
             }
         case .none:
             EmptyView()
@@ -93,7 +93,7 @@ struct AudioBars: View {
     private let speeds: [Double] = [5.1, 6.7, 4.3, 7.9]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24)) { context in
+        Ticker(every: 1.0 / 24) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             HStack(alignment: .center, spacing: 2) {
                 ForEach(speeds.indices, id: \.self) { index in

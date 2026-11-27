@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// Root view. Draws the black island and switches between closed, live-activity and open states.
 struct NotchView: View {
@@ -23,7 +22,7 @@ struct NotchView: View {
         ZStack(alignment: .top) {
             NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
                 .fill(Color.black)
-                .overlay {
+                .overlay(Group {
                     // Closed, the island stays pure black to match the camera notch.
                     if vm.isOpen, settings.glossyIsland {
                         IslandGloss(topRadius: topRadius,
@@ -32,7 +31,7 @@ struct NotchView: View {
                                     tint: vm.nowPlaying.isPlaying ? vm.nowPlaying.accentColor : nil)
                             .transition(.opacity)
                     }
-                }
+                })
                 .frame(width: size.width + topRadius * 2, height: size.height)
 
             if vm.isOpen {
@@ -46,9 +45,9 @@ struct NotchView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .ignoresSafeArea()
+        .edgesIgnoringSafeArea(.all)
         .coordinateSpace(name: NotchView.space)
-        .onDrop(of: [UTType.fileURL], isTargeted: $vm.isDropTargeted) { providers in
+        .onDrop(of: ["public.file-url"], isTargeted: $vm.isDropTargeted) { providers in
             guard settings.isVisible(.drop) else { return false }
             vm.shelf.add(providers)
             vm.tab = .drop
@@ -59,7 +58,7 @@ struct NotchView: View {
         .animation(spring, value: vm.isEditing)
         .animation(spring, value: vm.showsClosedLyrics)
         .animation(spring, value: settings.islandSize)
-        .preferredColorScheme(.dark)
+        .compatDarkScheme()
     }
 }
 
@@ -84,7 +83,7 @@ struct OpenView: View {
         }
         .padding(.horizontal, NotchGeometry.maxTopRadius + 18)
         .padding(.bottom, 16)
-        .foregroundStyle(.white)
+        .foregroundColor(.white)
     }
 
     @ViewBuilder
@@ -168,14 +167,14 @@ struct HeaderButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol)
+            SymbolImage(symbol)
                 .font(.system(size: 11, weight: .semibold))
                 .frame(width: 24, height: 22)
                 .background(Capsule().fill(Color.white.opacity(isSelected ? 0.18 : 0)))
                 .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
-        .help(help)
+        .buttonStyle(PlainButtonStyle())
+        .compatHelp(help)
     }
 }
 
@@ -212,15 +211,15 @@ struct WidgetMessage: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: symbol)
+            SymbolImage(symbol)
                 .font(.system(size: 22))
-                .foregroundStyle(.white.opacity(0.5))
+                .foregroundColor(.white.opacity(0.5))
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
             if let message {
                 Text(message)
                     .font(.system(size: 11))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundColor(.white.opacity(0.55))
                     .multilineTextAlignment(.center)
             }
             if let buttonTitle, let action {
@@ -259,33 +258,33 @@ struct IslandGloss: View {
             let shape = NotchShape(topRadius: topRadius, bottomRadius: bottomRadius)
             let headerEnd = min(0.4, (notchHeight + 4) / max(geometry.size.height, 1))
             ZStack {
-                shape.fill(LinearGradient(stops: [
+                shape.fill(LinearGradient(gradient: Gradient(stops: [
                     .init(color: .clear, location: 0),
                     .init(color: .clear, location: headerEnd),
                     .init(color: .white.opacity(0.09), location: headerEnd + 0.04),
                     .init(color: .white.opacity(0.02), location: 0.55),
                     .init(color: .clear, location: 0.7),
-                ], startPoint: .top, endPoint: .bottom))
+                ]), startPoint: .top, endPoint: .bottom))
 
-                shape.fill(LinearGradient(stops: [
+                shape.fill(LinearGradient(gradient: Gradient(stops: [
                     .init(color: .clear, location: 0.3),
                     .init(color: .white.opacity(0.06), location: 0.42),
                     .init(color: .clear, location: 0.54),
-                ], startPoint: .topLeading, endPoint: .bottomTrailing))
+                ]), startPoint: .topLeading, endPoint: .bottomTrailing))
 
                 if let tint {
-                    shape.fill(RadialGradient(colors: [tint.opacity(0.16), .clear],
+                    shape.fill(RadialGradient(gradient: Gradient(colors: [tint.opacity(0.16), .clear]),
                                               center: .bottom,
                                               startRadius: 0,
                                               endRadius: geometry.size.width * 0.45))
                 }
 
-                shape.stroke(LinearGradient(stops: [
+                shape.stroke(LinearGradient(gradient: Gradient(stops: [
                     .init(color: .clear, location: 0),
                     .init(color: .clear, location: headerEnd),
                     .init(color: .white.opacity(0.08), location: 0.5),
                     .init(color: .white.opacity(0.28), location: 1),
-                ], startPoint: .top, endPoint: .bottom), lineWidth: 1.2)
+                ]), startPoint: .top, endPoint: .bottom), lineWidth: 1.2)
             }
         }
         .allowsHitTesting(false)

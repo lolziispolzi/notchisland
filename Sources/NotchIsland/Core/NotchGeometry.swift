@@ -70,7 +70,7 @@ struct NotchGeometry: Equatable {
         let screens = NSScreen.screens
         switch choice {
         case .notchScreen:
-            if let notched = screens.first(where: { $0.safeAreaInsets.top > 0 }) {
+            if let notched = screens.first(where: { $0.notchHeight > 0 }) {
                 return make(for: notched)
             }
             return screens.first.map(make(for:))
@@ -80,11 +80,11 @@ struct NotchGeometry: Equatable {
     }
 
     static func make(for screen: NSScreen) -> NotchGeometry {
-        if screen.safeAreaInsets.top > 0 {
+        if screen.notchHeight > 0 {
             return notched(screenFrame: screen.frame,
-                           notchHeight: screen.safeAreaInsets.top,
-                           leftAreaWidth: screen.auxiliaryTopLeftArea?.width ?? 0,
-                           rightAreaWidth: screen.auxiliaryTopRightArea?.width ?? 0)
+                           notchHeight: screen.notchHeight,
+                           leftAreaWidth: screen.notchSideWidths.left,
+                           rightAreaWidth: screen.notchSideWidths.right)
         }
         return fake(screenFrame: screen.frame, visibleFrame: screen.visibleFrame)
     }

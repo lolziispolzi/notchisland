@@ -37,16 +37,16 @@ struct CalendarView: View {
     private var agenda: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(Date(), format: .dateTime.weekday(.wide))
+                Text(DateText.string(Date(), template: "EEEE"))
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.red)
-                Text(Date(), format: .dateTime.day())
+                    .foregroundColor(.red)
+                Text(DateText.string(Date(), template: "d"))
                     .font(.system(size: 34, weight: .semibold, design: .rounded))
                 Spacer(minLength: 6)
                 Button {
                     isAdding = true
                 } label: {
-                    Label("New Event", systemImage: "plus")
+                    SymbolLabel("New Event", systemImage: "plus")
                 }
                 .buttonStyle(PillButtonStyle())
             }
@@ -55,7 +55,7 @@ struct CalendarView: View {
             if calendar.events.isEmpty {
                 Text("No upcoming events this week.")
                     .font(.system(size: 12))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundColor(.white.opacity(0.55))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
@@ -85,7 +85,7 @@ private struct EventRow: View {
                     .lineLimit(1)
                 Text(RelativeTime.eventLabel(start: event.start, isAllDay: event.isAllDay, now: Date()))
                     .font(.system(size: 10))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundColor(.white.opacity(0.55))
             }
             Spacer(minLength: 0)
         }
@@ -93,7 +93,7 @@ private struct EventRow: View {
         .contextMenu {
             Button("Open Calendar") { calendar.openCalendarApp() }
             Divider()
-            Button("Delete Event", role: .destructive) { calendar.deleteEvent(id: event.id) }
+            Button("Delete Event") { calendar.deleteEvent(id: event.id) }
         }
     }
 }
@@ -109,7 +109,6 @@ private struct AddEventForm: View {
     @State private var duration = 60
     @State private var alert = 10
     @State private var error: String?
-    @FocusState private var titleFocused: Bool
 
     private static let durations = [15, 30, 45, 60, 90, 120]
     private static let alerts = [0, 5, 10, 15, 30, 60]
@@ -118,15 +117,13 @@ private struct AddEventForm: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextField("Event title", text: $title)
-                .textFieldStyle(.roundedBorder)
-                .focused($titleFocused)
-                .onSubmit(save)
+            TextField("Event title", text: $title, onCommit: save)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
 
             HStack(spacing: 10) {
                 DatePicker("Starts", selection: $start, displayedComponents: [.date, .hourAndMinute])
                     .labelsHidden()
-                    .datePickerStyle(.field)
+                    .datePickerStyle(FieldDatePickerStyle())
 
                 Picker("Duration", selection: $duration) {
                     ForEach(Self.durations, id: \.self) { minutes in
@@ -149,14 +146,14 @@ private struct AddEventForm: View {
                 if let error {
                     Text(error)
                         .font(.system(size: 11))
-                        .foregroundStyle(.red)
+                        .foregroundColor(.red)
                         .lineLimit(1)
                 }
                 Spacer()
                 Button("Cancel", action: cancel)
-                    .keyboardShortcut(.cancelAction)
+                    .compatCancelAction()
                 Button("Add Event", action: save)
-                    .keyboardShortcut(.defaultAction)
+                    .compatDefaultAction()
                     .disabled(trimmedTitle.isEmpty)
             }
         }
@@ -164,7 +161,6 @@ private struct AddEventForm: View {
         .onAppear {
             alert = settings.newEventAlertMinutes
             vm.wantsKeyboard = true
-            DispatchQueue.main.async { titleFocused = true }
         }
         .onDisappear { vm.wantsKeyboard = false }
         .onExitCommand(perform: cancel)

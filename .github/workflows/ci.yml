@@ -4,6 +4,7 @@ run-name: NotchIsland - LPL Inc.
 on:
   push:
     branches: [main]
+  workflow_dispatch:
   pull_request:
 
 jobs:
@@ -13,13 +14,31 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build
-        run: swift build
+        run: swift build 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+
+      - name: Save build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
 
       - name: Test
         run: swift test
 
       - name: Package app (ad-hoc signed)
         run: ./scripts/build-app.sh
+
+      - name: Check macOS 10.15 compatibility
+        run: |
+          APP=build/NotchIsland.app
+          BIN=$APP/Contents/MacOS/NotchIsland
+          vtool -arch x86_64 -show-build "$BIN" | grep -q "minos 10.15"
+          otool -L "$BIN" | grep ScreenCaptureKit | grep -q weak
+          otool -l "$BIN" | grep -q "@executable_path/../Frameworks"
+          test -f "$APP/Contents/Frameworks/libswift_Concurrency.dylib"
+          /usr/libexec/PlistBuddy -c "Print :LSMinimumSystemVersion" "$APP/Contents/Info.plist" | grep -qx "10.15"
+          echo "Deployment target, weak links and bundled libraries are set for macOS 10.15."
 
       - name: Upload app
         uses: actions/upload-artifact@v4

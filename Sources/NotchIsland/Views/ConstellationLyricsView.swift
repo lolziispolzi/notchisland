@@ -51,7 +51,7 @@ struct ConstellationLyricsView: View {
     let scale: CGFloat
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
+        Ticker(every: 1.0 / 30) { context in
             let elapsed = nowPlaying.elapsed(at: context.date) + settings.lyricsOffset
             let frame = ConstellationFrame.make(lines: lyrics.lyrics?.synced ?? [], elapsed: elapsed)
             ZStack {
@@ -87,10 +87,10 @@ struct ConstellationLyricsView: View {
                     VStack(spacing: 3 * scale) {
                         Text(frame.words[index])
                             .font(.system(size: 13 * scale, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.75))
-                        Image(systemName: "sparkle")
+                            .foregroundColor(.white.opacity(0.75))
+                        SymbolImage("sparkle")
                             .font(.system(size: (isCurrent ? 20 : 10) * scale))
-                            .foregroundStyle(isCurrent ? .white : color)
+                            .foregroundColor(isCurrent ? .white : color)
                             .shadow(color: color, radius: isCurrent ? 10 : 4)
                     }
                     .position(x: points[index].x, y: points[index].y - 10 * scale)
@@ -100,11 +100,11 @@ struct ConstellationLyricsView: View {
 
             Text(frame.currentWord)
                 .font(.system(size: 76 * scale, weight: .heavy, design: .rounded))
-                .foregroundStyle(color)
+                .foregroundColor(color)
                 .shadow(color: color.opacity(0.8), radius: 20)
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-                .contentTransition(.opacity)
+                .compatOpacityContentTransition()
                 .animation(.easeOut(duration: 0.2), value: frame.visibleCount)
         }
     }

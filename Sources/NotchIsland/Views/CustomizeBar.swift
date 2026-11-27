@@ -22,22 +22,22 @@ struct CustomizeBar: View {
                         Text(size.title).tag(size)
                     }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(SegmentedPickerStyle())
                 .labelsHidden()
                 .frame(width: 180)
 
                 Toggle("Live activities", isOn: $settings.showLiveActivities)
-                    .toggleStyle(.switch)
+                    .toggleStyle(SwitchToggleStyle())
                     .controlSize(.mini)
                 Toggle("Glossy", isOn: $settings.glossyIsland)
-                    .toggleStyle(.switch)
+                    .toggleStyle(SwitchToggleStyle())
                     .controlSize(.mini)
 
                 Spacer(minLength: 0)
 
                 Button("More…") { vm.openSettings() }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .buttonStyle(PlainButtonStyle())
+                    .foregroundColor(.white.opacity(0.6))
                 Button("Done") { vm.isEditing = false }
                     .buttonStyle(PillButtonStyle())
             }
@@ -68,15 +68,15 @@ struct WidgetChip: View {
                 settings.setVisible(widget, !isVisible)
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: widget.symbol)
+                    SymbolImage(widget.symbol)
                         .font(.system(size: 10))
                     Text(widget.shortTitle)
                         .font(.system(size: 10, weight: .semibold))
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .help(isVisible ? "Hide \(widget.title)" : "Show \(widget.title)")
+            .buttonStyle(PlainButtonStyle())
+            .compatHelp(isVisible ? "Hide \(widget.title)" : "Show \(widget.title)")
 
             arrow("chevron.right", offset: 1)
                 .disabled(index == settings.widgetOrder.count - 1)
@@ -91,11 +91,11 @@ struct WidgetChip: View {
         Button {
             settings.move(widget, by: offset)
         } label: {
-            Image(systemName: symbol)
+            SymbolImage(symbol)
                 .font(.system(size: 8, weight: .bold))
                 .frame(width: 10, height: 14)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
     }
 }

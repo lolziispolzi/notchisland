@@ -8,23 +8,23 @@ struct SettingsView: View {
     var body: some View {
         TabView {
             GeneralSettings(settings: settings)
-                .tabItem { Label("General", systemImage: "gearshape") }
+                .tabItem { SymbolLabel("General", systemImage: "gearshape") }
             LayoutSettings(settings: settings)
-                .tabItem { Label("Layout", systemImage: "rectangle.3.group") }
+                .tabItem { SymbolLabel("Layout", systemImage: "rectangle.3.group") }
             WeatherSettings(settings: settings, weather: vm.weather)
-                .tabItem { Label("Weather", systemImage: "cloud.sun") }
+                .tabItem { SymbolLabel("Weather", systemImage: "cloud.sun") }
             SportsSettings(settings: settings, sports: vm.sports)
-                .tabItem { Label("Sports", systemImage: "sportscourt") }
+                .tabItem { SymbolLabel("Sports", systemImage: "sportscourt") }
             LyricsSettings(settings: settings, lyrics: vm.lyrics)
-                .tabItem { Label("Lyrics", systemImage: "quote.bubble") }
+                .tabItem { SymbolLabel("Lyrics", systemImage: "quote.bubble") }
             WallpaperSettings(library: vm.wallpapers)
-                .tabItem { Label("Wallpaper", systemImage: "sparkles.tv") }
+                .tabItem { SymbolLabel("Wallpaper", systemImage: "sparkles.tv") }
             LockScreenSettings(settings: settings, audio: vm.audio, vm: vm, preview: vm.previewLockScreen)
-                .tabItem { Label("Lock Screen", systemImage: "lock.display") }
+                .tabItem { SymbolLabel("Lock Screen", systemImage: "lock.display") }
             CalendarSettings(settings: settings, calendar: vm.calendar)
-                .tabItem { Label("Calendar", systemImage: "calendar") }
+                .tabItem { SymbolLabel("Calendar", systemImage: "calendar") }
             DropSettings(settings: settings, shelf: vm.shelf)
-                .tabItem { Label("Drop Zone", systemImage: "tray.and.arrow.down") }
+                .tabItem { SymbolLabel("Drop Zone", systemImage: "tray.and.arrow.down") }
         }
         .frame(width: 720, height: 600)
     }
@@ -41,7 +41,7 @@ struct SettingsView: View {
 
 private struct GeneralSettings: View {
     @ObservedObject var settings: AppSettings
-    @StateObject private var launchAtLogin = LaunchAtLogin()
+    @ObservedObject private var launchAtLogin = LaunchAtLogin.shared
 
     var body: some View {
         Form {
@@ -53,7 +53,7 @@ private struct GeneralSettings: View {
                 if let message = launchAtLogin.errorMessage {
                     Text(message)
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundColor(.red)
                 }
                 Picker("Show on", selection: $settings.displayChoice) {
                     ForEach(DisplayChoice.allCases) { choice in
@@ -66,41 +66,41 @@ private struct GeneralSettings: View {
                     .disabled(SkyLightSpace.aboveFullScreen == nil)
                 Text("Uses the same private macOS interface as the lock-screen player. Turning it off takes effect after you quit and reopen NotchIsland.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
             }
 
-            Section("Behavior") {
+            Section(header: Text("Behavior")) {
                 Toggle("Open on hover", isOn: $settings.openOnHover)
                 if settings.openOnHover {
-                    LabeledContent("Hover delay") {
+                    LabeledRow("Hover delay") {
                         HStack {
                             Slider(value: $settings.hoverDelay, in: 0...1, step: 0.05)
                             Text(String(format: "%.2fs", settings.hoverDelay))
-                                .monospacedDigit()
+                                .compatMonospacedDigit()
                                 .frame(width: 44, alignment: .trailing)
                         }
                     }
                 } else {
                     Text("Click the notch to open the island.")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.secondary)
                 }
                 Toggle("Haptic feedback", isOn: $settings.hapticsEnabled)
             }
 
-            Section("While closed") {
+            Section(header: Text("While closed")) {
                 Toggle("Live activities", isOn: $settings.showLiveActivities)
                 Text("Shows live scores, upcoming events, charging and music next to the notch.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
                 Toggle("Battery in the header", isOn: $settings.showBattery)
             }
 
-            Section("About") {
-                LabeledContent("Version", value: SettingsView.version)
+            Section(header: Text("About")) {
+                LabeledRow("Version", value: SettingsView.version)
             }
         }
-        .formStyle(.grouped)
+        .compatGroupedForm()
     }
 }
 
@@ -111,20 +111,26 @@ private struct LayoutSettings: View {
 
     var body: some View {
         Form {
-            Section("Island size") {
+            Section(header: Text("Island size")) {
                 Picker("Size", selection: $settings.islandSize) {
                     ForEach(IslandSize.allCases) { size in
                         Text(size.title).tag(size)
                     }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(SegmentedPickerStyle())
                 .labelsHidden()
             }
 
-            Section {
+            Section(header: Group {
+                Text("Widgets")
+            }, footer: Group {
+                Text("The first visible widget opens by default. You can also press the sliders button in the island to change this without opening Settings.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
                 ForEach(settings.widgetOrder) { widget in
                     HStack {
-                        Image(systemName: widget.symbol)
+                        SymbolImage(widget.symbol)
                             .frame(width: 22)
                         Toggle(widget.title, isOn: Binding(
                             get: { settings.isVisible(widget) },
@@ -134,28 +140,22 @@ private struct LayoutSettings: View {
                         Button {
                             settings.move(widget, by: -1)
                         } label: {
-                            Image(systemName: "chevron.up")
+                            SymbolImage("chevron.up")
                         }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(BorderlessButtonStyle())
                         .disabled(settings.widgetOrder.first == widget)
                         Button {
                             settings.move(widget, by: 1)
                         } label: {
-                            Image(systemName: "chevron.down")
+                            SymbolImage("chevron.down")
                         }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(BorderlessButtonStyle())
                         .disabled(settings.widgetOrder.last == widget)
                     }
                 }
-            } header: {
-                Text("Widgets")
-            } footer: {
-                Text("The first visible widget opens by default. You can also press the sliders button in the island to change this without opening Settings.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
+        .compatGroupedForm()
     }
 }
 
@@ -182,22 +182,27 @@ private struct WeatherSettings: View {
                 if !AppEnvironment.isBundled {
                     Text("Current location works only in the built app (scripts/run-app.sh).")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.secondary)
                 }
             }
 
-            Section {
+            Section(header: Group {
+                Text("City")
+            }, footer: Group {
+                Text("Used when current location is off or unavailable.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
                 if let location = settings.manualLocation {
-                    LabeledContent("City", value: [location.name, location.detail].compactMap { $0 }.joined(separator: ", "))
+                    LabeledRow("City", value: [location.name, location.detail].compactMap { $0 }.joined(separator: ", "))
                 }
                 HStack {
-                    TextField("Search for a city", text: $query)
-                        .onSubmit(search)
+                    TextField("Search for a city", text: $query, onCommit: search)
                     Button("Search", action: search)
                         .disabled(query.trimmingCharacters(in: .whitespaces).isEmpty || isSearching)
                 }
                 if isSearching {
-                    ProgressView().controlSize(.small)
+                    Spinner().controlSize(.small)
                 }
                 ForEach(results, id: \.self) { result in
                     Button {
@@ -209,37 +214,31 @@ private struct WeatherSettings: View {
                             VStack(alignment: .leading) {
                                 Text(result.name)
                                 if let detail = result.detail {
-                                    Text(detail).font(.caption).foregroundStyle(.secondary)
+                                    Text(detail).font(.caption).foregroundColor(.secondary)
                                 }
                             }
                             Spacer()
                         }
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PlainButtonStyle())
                 }
                 if let searchMessage {
-                    Text(searchMessage).font(.caption).foregroundStyle(.secondary)
+                    Text(searchMessage).font(.caption).foregroundColor(.secondary)
                 }
-            } header: {
-                Text("City")
-            } footer: {
-                Text("Used when current location is off or unavailable.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Section {
                 if let snapshot = weather.snapshot {
-                    LabeledContent("Showing", value: snapshot.locationName)
+                    LabeledRow("Showing", value: snapshot.locationName)
                 }
                 Button("Refresh Now") { weather.refresh() }
                 Text("Weather data from Open-Meteo.com.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
             }
         }
-        .formStyle(.grouped)
+        .compatGroupedForm()
     }
 
     private func search() {
@@ -269,16 +268,18 @@ private struct SportsSettings: View {
 
     var body: some View {
         Form {
-            Section {
+            Section(header: Group {
+                Text("Your team")
+            }) {
                 TextField("Search for a team, e.g. Arsenal, Lakers, Yankees", text: $query)
                 if sports.teamsState == .loading {
                     HStack {
-                        ProgressView().controlSize(.small)
-                        Text("Loading teams from every league…").font(.caption).foregroundStyle(.secondary)
+                        Spinner().controlSize(.small)
+                        Text("Loading teams from every league…").font(.caption).foregroundColor(.secondary)
                     }
                 } else if let error = sports.teamsState.errorMessage {
                     HStack {
-                        Text(error).foregroundStyle(.red)
+                        Text(error).foregroundColor(.red)
                         Button("Retry") { sports.loadAllTeams() }
                     }
                 }
@@ -295,20 +296,18 @@ private struct SportsSettings: View {
                                 if let league = team.league {
                                     Text("\(league.title) · \(league.sportName)")
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundColor(.secondary)
                                 }
                             }
                             Spacer()
                             if team.searchKey == settings.favoriteTeam?.searchKey {
-                                Image(systemName: "checkmark")
+                                SymbolImage("checkmark")
                             }
                         }
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PlainButtonStyle())
                 }
-            } header: {
-                Text("Your team")
             }
 
             if let team = settings.favoriteTeam {
@@ -319,7 +318,7 @@ private struct SportsSettings: View {
                             Text(team.name).font(.headline)
                             Text((team.league ?? settings.sportsLeague).title)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundColor(.secondary)
                         }
                         Spacer()
                         Button("Refresh Scores") { sports.refresh() }
@@ -331,10 +330,10 @@ private struct SportsSettings: View {
             Section {
                 Text("Shows every game your team plays: league, cups, European and other competitions, and friendlies, each labeled with its competition. While a game is live, the score shows next to the notch and updates every minute. Scores come from ESPN's public data feed.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
             }
         }
-        .formStyle(.grouped)
+        .compatGroupedForm()
         .onAppear { sports.loadAllTeams() }
     }
 }
@@ -347,17 +346,17 @@ private struct LyricsSettings: View {
 
     var body: some View {
         Form {
-            Section {
+            Section(footer: Group {
+                Text("Lyrics come from LRCLIB.net, a free community database. Not every song has lyrics, and some have them without timing.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
                 Toggle("Show lyrics for the playing song", isOn: $settings.lyricsEnabled)
                 Toggle("Show the current line under the notch", isOn: $settings.lyricsUnderNotch)
                     .disabled(!settings.lyricsEnabled)
-            } footer: {
-                Text("Lyrics come from LRCLIB.net, a free community database. Not every song has lyrics, and some have them without timing.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
-            Section("Desktop") {
+            Section(header: Text("Desktop")) {
                 Picker("Lyrics on the desktop", selection: $settings.desktopLyricsStyle) {
                     ForEach(DesktopLyricsStyle.allCases) { style in
                         Text(style.title).tag(style)
@@ -370,35 +369,35 @@ private struct LyricsSettings: View {
                         Text(size.title).tag(size)
                     }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(SegmentedPickerStyle())
                 .disabled(settings.desktopLyricsStyle == .off)
                 Text("Desktop lyrics sit behind your windows, so you see them when the desktop is visible.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
             }
             .disabled(!settings.lyricsEnabled)
 
-            Section {
-                LabeledContent("Timing") {
+            Section(header: Group {
+                Text("Sync")
+            }, footer: Group {
+                Text("If lyrics run late, move the slider right. If they run early, move it left.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
+                LabeledRow("Timing") {
                     HStack {
                         Slider(value: $settings.lyricsOffset, in: -3...3, step: 0.25)
                         Text(String(format: "%+.2fs", settings.lyricsOffset))
-                            .monospacedDigit()
+                            .compatMonospacedDigit()
                             .frame(width: 52, alignment: .trailing)
                     }
                 }
                 Button("Reset Timing") { settings.lyricsOffset = 0 }
                     .disabled(settings.lyricsOffset == 0)
-            } header: {
-                Text("Sync")
-            } footer: {
-                Text("If lyrics run late, move the slider right. If they run early, move it left.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
             .disabled(!settings.lyricsEnabled)
         }
-        .formStyle(.grouped)
+        .compatGroupedForm()
     }
 }
 
@@ -409,8 +408,6 @@ private struct WallpaperSettings: View {
     @State private var prompt = ""
     @State private var apiKey = ""
 
-    private let columns = [GridItem(.adaptive(minimum: 150), spacing: 12)]
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -419,34 +416,32 @@ private struct WallpaperSettings: View {
                         Text("Light").tag(WallpaperTheme.light)
                         Text("Dark").tag(WallpaperTheme.dark)
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(SegmentedPickerStyle())
                     .labelsHidden()
                     .frame(width: 200)
                     Spacer()
-                    if library.isWorking { ProgressView().controlSize(.small) }
+                    if library.isWorking { Spinner().controlSize(.small) }
                     Button("Add Your Own…") { library.importImages() }
                 }
 
                 if let message = library.message {
                     Text(message)
                         .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
+                        .foregroundColor(.secondary)
+                        .compatTextSelection()
                 }
                 if let current = library.current, let credit = current.credit {
                     Text("Current: \(credit)")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
+                        .foregroundColor(.secondary)
+                        .compatTextSelection()
                 }
 
                 ForEach(library.sections, id: \.category) { section in
                     Text(section.category.title)
                         .font(.headline)
-                    LazyVGrid(columns: columns, spacing: 14) {
-                        ForEach(section.items) { item in
-                            WallpaperTile(item: item, library: library)
-                        }
+                    SimpleGrid(items: section.items, columns: 3, spacing: 12) { item in
+                        WallpaperTile(item: item, library: library)
                     }
                 }
 
@@ -454,28 +449,28 @@ private struct WallpaperSettings: View {
 
                 Text("Wall art: public-domain works from the Art Institute of Chicago (CC0). Places: NASA photographs (public domain). Graphic designs: originals made for NotchIsland.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
             }
             .padding(20)
         }
     }
 
     private var designSection: some View {
-        GroupBox {
+        GroupBox(label: SymbolLabel("Design one with Claude", systemImage: "sparkles")) {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Describe a wallpaper and Claude designs it: the style, colors and mood. NotchIsland then paints it at your screen's full resolution and adds it to your library.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
                 HStack {
-                    TextField("e.g. calm sunrise over misty hills in peach and lavender", text: $prompt)
-                        .onSubmit { library.generate(prompt: prompt) }
+                    TextField("e.g. calm sunrise over misty hills in peach and lavender", text: $prompt,
+                              onCommit: { library.generate(prompt: prompt) })
                     Button("Design") { library.generate(prompt: prompt) }
                         .disabled(prompt.trimmingCharacters(in: .whitespaces).isEmpty || library.isWorking || !library.hasAPIKey)
                 }
                 Divider()
                 if library.hasAPIKey {
                     HStack {
-                        Label("Anthropic API key saved in your keychain", systemImage: "key.fill")
+                        SymbolLabel("Anthropic API key saved in your keychain", systemImage: "key.fill")
                             .font(.caption)
                         Spacer()
                         Button("Remove Key") { library.removeAPIKey() }
@@ -491,12 +486,10 @@ private struct WallpaperSettings: View {
                     }
                     Text("Needs your own key from console.anthropic.com. Each design is one request to Claude, billed to your account. The key stays in your Mac's keychain.")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.secondary)
                 }
             }
             .padding(6)
-        } label: {
-            Label("Design one with Claude", systemImage: "sparkles")
         }
     }
 }
@@ -527,7 +520,7 @@ private struct WallpaperTile: View {
             )
             HStack(spacing: 4) {
                 if item.source == .generated {
-                    Image(systemName: "sparkles").font(.caption2)
+                    SymbolImage("sparkles").font(.system(size: 10))
                 }
                 Text(item.name)
                     .font(.caption)
@@ -536,7 +529,7 @@ private struct WallpaperTile: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { library.apply(item) }
-        .help(item.credit ?? "Set as wallpaper")
+        .compatHelp(item.credit ?? "Set as wallpaper")
         .contextMenu {
             Button("Set as Wallpaper") { library.apply(item) }
             if let source = item.sourceURL, let url = URL(string: source) {
@@ -544,7 +537,7 @@ private struct WallpaperTile: View {
             }
             if item.source != .builtIn {
                 Divider()
-                Button("Remove from Library", role: .destructive) { library.remove(item) }
+                Button("Remove from Library") { library.remove(item) }
             }
         }
     }
@@ -560,7 +553,15 @@ private struct LockScreenSettings: View {
 
     var body: some View {
         Form {
-            Section {
+            Section(header: Group {
+                Text("Lock screen")
+            }, footer: Group {
+                Text(LockScreenController.isSupported
+                     ? "Experimental. macOS has no public way to draw on the lock screen, so this uses a private system interface. It may stop working after a macOS update."
+                     : "Not available on this version of macOS.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
                 Toggle("Show the player on the lock screen", isOn: $settings.lockScreenEnabled)
                     .disabled(!LockScreenController.isSupported)
                 Picker("Lyrics style", selection: $settings.lockScreenLyricsStyle) {
@@ -573,40 +574,43 @@ private struct LockScreenSettings: View {
                     .disabled(!settings.lockScreenEnabled)
                 Text("While music plays: click the cover to enlarge it, click again for lyrics, and again to go back. A song must be playing for the preview.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Lock screen")
-            } footer: {
-                Text(LockScreenController.isSupported
-                     ? "Experimental. macOS has no public way to draw on the lock screen, so this uses a private system interface. It may stop working after a macOS update."
-                     : "Not available on this version of macOS.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
             }
 
-            Section("Status") {
-                LabeledContent("Lock-screen functions", value: LockScreenController.isSupported ? "Found" : "Not found")
-                LabeledContent("Last lock",
-                               value: vm.lockScreenStatus.lastLocked?.formatted(date: .omitted, time: .standard) ?? "Not seen yet")
+            Section(header: Text("Status")) {
+                LabeledRow("Lock-screen functions", value: LockScreenController.isSupported ? "Found" : "Not found")
+                LabeledRow("Last lock",
+                               value: vm.lockScreenStatus.lastLocked.map { DateText.string($0, date: .none, time: .medium) } ?? "Not seen yet")
                 Text(vm.lockScreenStatus.lastAttempt)
                     .font(.caption)
-                    .textSelection(.enabled)
+                    .compatTextSelection()
                 Text("If the lock screen stays empty, lock and unlock once, then send a screenshot of this section.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.secondary)
             }
 
-            Section {
+            Section(header: Group {
+                Text("Edge glow")
+            }, footer: Group {
+                Text("The glow takes the album's color. Without \"Pulse with the sound\" it flashes as each lyric line starts. With it, NotchIsland measures how loud your Mac's sound is; it never records or saves audio.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
                 Toggle("Glow around the screen edge while music plays", isOn: $settings.edgeGlowEnabled)
                 Toggle("Pulse with the sound", isOn: $settings.edgeGlowReactsToAudio)
-                    .disabled(!settings.edgeGlowEnabled)
+                    .disabled(!settings.edgeGlowEnabled || !audio.isSupported)
+                if !audio.isSupported {
+                    Text("Pulsing with the sound needs macOS 13 or newer. The glow still flashes with each lyric line.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 if settings.edgeGlowReactsToAudio, audio.state == .needsPermission || audio.state == .unavailable {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(audio.state == .needsPermission
                              ? "Needs Screen & System Audio Recording permission. After allowing it, quit and reopen NotchIsland."
                              : "Couldn't start audio metering. Quit and reopen NotchIsland.")
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundColor(.red)
                         HStack {
                             Button("Allow…") { audio.requestPermission() }
                             Button("Open Privacy Settings") {
@@ -617,15 +621,9 @@ private struct LockScreenSettings: View {
                         }
                     }
                 }
-            } header: {
-                Text("Edge glow")
-            } footer: {
-                Text("The glow takes the album's color. Without \"Pulse with the sound\" it flashes as each lyric line starts. With it, NotchIsland measures how loud your Mac's sound is; it never records or saves audio.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
+        .compatGroupedForm()
     }
 }
 
@@ -649,8 +647,8 @@ private struct CalendarSettings: View {
 
     var body: some View {
         Form {
-            Section("Access") {
-                LabeledContent("Calendar access", value: statusText)
+            Section(header: Text("Access")) {
+                LabeledRow("Calendar access", value: statusText)
                 if calendar.access == .notDetermined {
                     Button("Allow Access") { calendar.requestAccess() }
                 } else if calendar.access == .denied {
@@ -658,7 +656,13 @@ private struct CalendarSettings: View {
                 }
             }
 
-            Section {
+            Section(header: Group {
+                Text("Reminders")
+            }, footer: Group {
+                Text("Alerts are saved on the event, so Calendar reminds you on this Mac and your other devices.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
                 Picker("Show upcoming event in the notch", selection: $settings.eventHeadsUpMinutes) {
                     ForEach(Self.headsUpChoices, id: \.self) { minutes in
                         Text(minutes == 0 ? "Off" : "\(minutes) min before").tag(minutes)
@@ -669,15 +673,9 @@ private struct CalendarSettings: View {
                         Text(minutes == 0 ? "None" : "\(minutes) min before").tag(minutes)
                     }
                 }
-            } header: {
-                Text("Reminders")
-            } footer: {
-                Text("Alerts are saved on the event, so Calendar reminds you on this Mac and your other devices.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
+        .compatGroupedForm()
     }
 }
 
@@ -693,44 +691,44 @@ private struct DropSettings: View {
                 Toggle("Remove files from the drop zone after copying", isOn: $settings.removeAfterCopy)
             }
 
-            Section("Found on this Mac") {
+            Section(header: Text("Found on this Mac")) {
                 ForEach(ShelfStore.detectedDestinations()) { destination in
-                    LabeledContent {
+                    HStack {
+                        SymbolLabel(destination.name, systemImage: destination.symbol)
+                        Spacer()
                         Text(destination.url.path)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundColor(.secondary)
                             .lineLimit(1)
                             .truncationMode(.middle)
-                    } label: {
-                        Label(destination.name, systemImage: destination.symbol)
                     }
                 }
             }
 
-            Section {
+            Section(header: Group {
+                Text("Your folders")
+            }, footer: Group {
+                Text("Copying into a Dropbox, Google Drive, OneDrive or iCloud Drive folder uploads the file through that app.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }) {
                 ForEach(settings.customDropFolders, id: \.self) { path in
                     HStack {
-                        Label(URL(fileURLWithPath: path).lastPathComponent, systemImage: "folder")
+                        SymbolLabel(URL(fileURLWithPath: path).lastPathComponent, systemImage: "folder")
                         Spacer()
                         Button {
                             settings.customDropFolders.removeAll { $0 == path }
                         } label: {
-                            Image(systemName: "minus.circle")
+                            SymbolImage("minus.circle")
                         }
-                        .buttonStyle(.borderless)
-                        .help("Remove")
+                        .buttonStyle(BorderlessButtonStyle())
+                        .compatHelp("Remove")
                     }
                 }
                 Button("Add Folder…", action: addFolder)
-            } header: {
-                Text("Your folders")
-            } footer: {
-                Text("Copying into a Dropbox, Google Drive, OneDrive or iCloud Drive folder uploads the file through that app.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
+        .compatGroupedForm()
     }
 
     private func addFolder() {

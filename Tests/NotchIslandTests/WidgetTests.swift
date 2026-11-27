@@ -502,6 +502,7 @@ final class StarsAndGlowTests: XCTestCase {
     }
 
     func testAudioLevelNormalization() {
+        guard #available(macOS 13, *) else { return }
         XCTAssertEqual(AudioLevelOutput.normalized(rms: 1), 1, accuracy: 0.0001)
         XCTAssertEqual(AudioLevelOutput.normalized(rms: 0), 0, accuracy: 0.0001)
         XCTAssertEqual(AudioLevelOutput.normalized(rms: 0.0316), 0.4, accuracy: 0.01)

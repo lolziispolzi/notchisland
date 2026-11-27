@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- Runs on macOS 10.15 Catalina and later (was macOS 14), on Macs with or without a notch. On older systems, the few features that need newer APIs fall back: text icons instead of SF Symbols before macOS 11, and no sound-reactive edge glow before macOS 13. Launch at login uses a LaunchAgent before macOS 13.
+
 ### Fixed
 - Files couldn't be dropped on the island: a drop target over the notch now opens the Drop Zone when a file is dragged to it. Added an "Add Files…" button.
 - The island's header was hidden under the menu bar in full-screen apps; the island now stays above full-screen apps.

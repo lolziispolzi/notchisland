@@ -38,10 +38,10 @@ struct DesktopLyricsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
+        .edgesIgnoringSafeArea(.all)
         .animation(.easeInOut(duration: 0.8), value: nowPlaying.track)
         .animation(.easeInOut(duration: 1.2), value: nowPlaying.palette)
-        .preferredColorScheme(.dark)
+        .compatDarkScheme()
     }
 
     // MARK: - Cover and lyrics
@@ -56,11 +56,11 @@ struct DesktopLyricsView: View {
                         .font(.system(size: 22 * scale, weight: .bold))
                     Text(nowPlaying.track?.artist ?? "")
                         .font(.system(size: 16 * scale, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundColor(.white.opacity(0.7))
                 }
                 .multilineTextAlignment(.center)
                 .lineLimit(1)
-                TimelineView(.periodic(from: .now, by: 1)) { context in
+                Ticker(every: 1) { context in
                     ProgressRow(elapsed: nowPlaying.elapsed(at: context.date),
                                 duration: nowPlaying.track?.duration ?? 0)
                 }
@@ -74,7 +74,7 @@ struct DesktopLyricsView: View {
                             spacing: 18 * scale)
                 .frame(width: 640 * scale, height: 460 * scale)
         }
-        .foregroundStyle(.white)
+        .foregroundColor(.white)
         .shadow(color: .black.opacity(allowsBackdrop && settings.desktopLyricsTint ? 0 : 0.6), radius: 8)
     }
 
@@ -96,12 +96,12 @@ struct DesktopLyricsView: View {
                         .font(.system(size: 13, weight: .semibold))
                     Text(nowPlaying.track?.artist ?? "")
                         .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.65))
+                        .foregroundColor(.white.opacity(0.65))
                 }
                 .lineLimit(1)
             }
         }
-        .foregroundStyle(.white)
+        .foregroundColor(.white)
         .shadow(color: .black.opacity(allowsBackdrop && settings.desktopLyricsTint ? 0 : 0.6), radius: 10)
     }
 
@@ -110,7 +110,7 @@ struct DesktopLyricsView: View {
     private var bottomLine: some View {
         VStack {
             Spacer()
-            TimelineView(.periodic(from: .now, by: 0.25)) { context in
+            Ticker(every: 0.25) { context in
                 let elapsed = nowPlaying.elapsed(at: context.date)
                 let index = vm.lyrics.currentIndex(at: elapsed)
                 let lines = vm.lyrics.lyrics?.synced ?? []
@@ -122,11 +122,11 @@ struct DesktopLyricsView: View {
                     Text(current.isEmpty ? "♪" : current)
                         .font(.system(size: 30 * scale, weight: .bold))
                         .id(index ?? -1)
-                        .transition(.push(from: .bottom).combined(with: .opacity))
+                        .transition(.pushFromBottom.combined(with: .opacity))
                     if !next.isEmpty {
                         Text(next)
                             .font(.system(size: 18 * scale, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.5))
+                            .foregroundColor(.white.opacity(0.5))
                     }
                 }
                 .multilineTextAlignment(.center)
@@ -134,12 +134,12 @@ struct DesktopLyricsView: View {
                 .padding(.horizontal, 32 * scale)
                 .padding(.vertical, 18 * scale)
                 .frame(maxWidth: 1000 * scale)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28 * scale, style: .continuous))
+                .background(FrostedBackground().clipShape(RoundedRectangle(cornerRadius: 28 * scale, style: .continuous)))
                 .animation(.spring(response: 0.45, dampingFraction: 0.85), value: index)
             }
             .padding(.bottom, 140)
         }
-        .foregroundStyle(.white)
+        .foregroundColor(.white)
     }
 }
 
@@ -148,22 +148,22 @@ struct AlbumBackdrop: View {
     let colors: [NSColor]
 
     private var first: Color {
-        colors.first.map { Color(nsColor: $0.dimmed(to: 0.7)) } ?? Color(white: 0.1)
+        colors.first.map { Color($0.dimmed(to: 0.7)) } ?? Color(white: 0.1)
     }
 
     private var second: Color {
-        colors.dropFirst().first.map { Color(nsColor: $0.dimmed(to: 0.45, maxBrightness: 0.4)) } ?? Color(white: 0.04)
+        colors.dropFirst().first.map { Color($0.dimmed(to: 0.45, maxBrightness: 0.4)) } ?? Color(white: 0.04)
     }
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: [first, second], startPoint: .topLeading, endPoint: .bottomTrailing)
-            RadialGradient(colors: [first.opacity(0.7), .clear],
+            LinearGradient(gradient: Gradient(colors: [first, second]), startPoint: .topLeading, endPoint: .bottomTrailing)
+            RadialGradient(gradient: Gradient(colors: [first.opacity(0.7), .clear]),
                            center: UnitPoint(x: 0.25, y: 0.3),
                            startRadius: 0,
                            endRadius: 900)
             Color.black.opacity(0.25)
         }
-        .ignoresSafeArea()
+        .edgesIgnoringSafeArea(.all)
     }
 }
